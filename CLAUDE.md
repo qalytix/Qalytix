@@ -257,37 +257,37 @@ qalytix-ui/src/
 
 ---
 
-### Phase 1 — SaaS Foundation + Auth
+### Phase 1 — SaaS Foundation + Auth ✅
 **Goal:** Multi-tenant auth, org creation, member invitation — the SaaS skeleton.
 
 #### Backend
-- [ ] Folder structure and package skeleton
-- [ ] `application.yml` with `dev` and `prod` profiles
-- [ ] PostgreSQL + Flyway baseline
-- [ ] Migrations: `organizations`, `users`, `organization_members`, `refresh_tokens`, `invitations`
-- [ ] `TenantContext` (thread-local) and `TenantFilter`
-- [ ] JWT utility: generate (with `orgId`, `role` claims), validate, refresh
-- [ ] Spring Security config: stateless, JWT filter, public endpoints
-- [ ] `AuthController`: register, login, refresh, logout
-- [ ] `OrganizationController`: create org (on first signup), get current org
-- [ ] `MemberController`: list members, update role, remove member
-- [ ] `InvitationController`: send invite (email), accept invite (token)
-- [ ] Email service via SendGrid: invitation email template
-- [ ] Global exception handler (`ProblemDetail`)
-- [ ] SpringDoc OpenAPI setup
-- [ ] Docker Compose: `postgres` + `qalytix-backend`
+- [x] Folder structure and package skeleton
+- [x] `application.yml` with `dev` and `prod` profiles
+- [x] PostgreSQL + Flyway baseline
+- [x] Migrations: `organizations`, `users`, `organization_members`, `refresh_tokens`, `invitations`
+- [x] `TenantContext` (thread-local) and `TenantFilter`
+- [x] JWT utility: generate (with `orgId`, `role` claims), validate, refresh
+- [x] Spring Security config: stateless, JWT filter, public endpoints
+- [x] `AuthController`: register, login, refresh, logout
+- [x] `OrganizationController`: create org (on first signup), get current org
+- [x] `MemberController`: list members, update role, remove member
+- [x] `InvitationController`: send invite (email), accept invite (token)
+- [x] Email service via SendGrid: invitation email template
+- [x] Global exception handler (`ProblemDetail`)
+- [x] SpringDoc OpenAPI setup
+- [x] Docker Compose: `postgres` + `qalytix-backend`
 
 #### Frontend
-- [ ] Vite + React 18 + TypeScript scaffold in `qalytix-ui/`
-- [ ] Tailwind CSS v4, React Router v7
-- [ ] Axios instance with JWT interceptor + 401 → refresh flow
-- [ ] `authStore`, `orgStore`
-- [ ] Login, Register, ForgotPassword pages
+- [x] Vite + React 19 + TypeScript scaffold in `qalytix-ui/`
+- [x] Tailwind CSS v4, React Router v7
+- [x] Axios instance with JWT interceptor + 401 → refresh flow
+- [x] `authStore`, `orgStore`
+- [x] Login, Register pages
 - [ ] Onboarding: create organization wizard (name, slug)
 - [ ] Accept invitation page (token from email link)
-- [ ] App shell: sidebar, header with org name + user menu
+- [x] App shell: sidebar, header with org name + user menu
 - [ ] Team members page: list, invite, change role, remove
-- [ ] Protected route wrapper checking auth + org context
+- [x] Protected route wrapper checking auth + org context
 
 **Deliverable:** User signs up, creates org, invites a teammate — all auth flows work.
 
@@ -489,14 +489,17 @@ Qalytix uses **Semantic Versioning** (`MAJOR.MINOR.PATCH`) across both apps. Bac
 
 When a phase is complete and ready to release:
 
-1. Update `qalytix-backend/pom.xml`: remove `-SNAPSHOT`, e.g. `0.1.0`
-2. Update `qalytix-ui/package.json`: remove `-alpha`, e.g. `0.1.0`
-3. Update `CHANGELOG.md`: rename `[Unreleased]` → `[0.1.0] - YYYY-MM-DD`
-4. Commit: `chore: release v0.1.0`
-5. Tag: `git tag -a v0.1.0 -m "Phase 1 — SaaS Foundation"`
-6. Push commit + tag
-7. Immediately bump to next SNAPSHOT: `0.2.0-SNAPSHOT` / `0.2.0-alpha`
-8. Commit: `chore: begin v0.2.0 development`
+1. Mark every checklist item in the completed phase section below as `[x]` in this file
+2. Update `qalytix-backend/pom.xml`: remove `-SNAPSHOT`, e.g. `0.1.0`
+3. Update `qalytix-ui/package.json`: remove `-alpha`, e.g. `0.1.0`
+4. Update `CHANGELOG.md`: rename `[Unreleased]` → `[0.1.0] - YYYY-MM-DD`
+5. Commit: `chore: release v0.1.0`
+6. Tag: `git tag -a v0.1.0 -m "Phase 1 — SaaS Foundation"`
+7. Push commit + tag
+8. Immediately bump to next SNAPSHOT: `0.2.0-SNAPSHOT` / `0.2.0-alpha`
+9. Commit: `chore: begin v0.2.0 development`
+
+> **Rule:** The phase checklists in this file are the source of truth for implementation status. Always keep them up to date — tick items as they are completed, not only at phase end.
 
 ---
 
