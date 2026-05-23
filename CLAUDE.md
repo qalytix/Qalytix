@@ -439,6 +439,67 @@ qalytix-ui/src/
 
 ---
 
+## Versioning Strategy
+
+Qalytix uses **Semantic Versioning** (`MAJOR.MINOR.PATCH`) across both apps. Backend and frontend always share the same version number.
+
+### Version meaning
+
+| Segment | When to bump |
+|---|---|
+| `MAJOR` | Breaking API changes or platform-wide architecture overhaul |
+| `MINOR` | A new phase ships (Phase 2 → `0.2.0`, Phase 3 → `0.3.0`, …) |
+| `PATCH` | Bug fixes or small improvements within a released version |
+
+### Phase → version mapping
+
+| Milestone | Version |
+|---|---|
+| Phase 1 — SaaS Foundation | `0.1.0` |
+| Phase 2 — Jenkins Integration | `0.2.0` |
+| Phase 3 — Live Dashboard | `0.3.0` |
+| Phase 4 — Test Analytics | `0.4.0` |
+| Phase 5 — Billing | `0.5.0` |
+| Phase 6 — Notifications | `0.6.0` |
+| Phase 7 — Reports | `0.7.0` |
+| Phase 8 — Super-Admin | `0.8.0` |
+| Full MVP shipped | `1.0.0` |
+
+### Pre-release identifiers
+
+| Stage | Backend (`pom.xml`) | Frontend (`package.json`) |
+|---|---|---|
+| In development | `0.x.0-SNAPSHOT` | `0.x.0-alpha` |
+| Release candidate | `0.x.0-RC1` | `0.x.0-rc.1` |
+| Released | `0.x.0` | `0.x.0` |
+
+### Git tags
+
+- Tag every release on `master`: `git tag -a v0.1.0 -m "Phase 1 — SaaS Foundation"`
+- Tag format: `v{MAJOR}.{MINOR}.{PATCH}` — no suffixes on tags (tags always point to released commits)
+- Push tags: `git push origin --tags`
+
+### Changelog
+
+- Maintain `CHANGELOG.md` at the repo root following [Keep a Changelog](https://keepachangelog.com) format
+- Every PR must update `CHANGELOG.md` under `[Unreleased]`
+- On release: rename `[Unreleased]` to `[0.x.0] - YYYY-MM-DD` and open a new empty `[Unreleased]` section
+
+### Bumping versions (checklist)
+
+When a phase is complete and ready to release:
+
+1. Update `qalytix-backend/pom.xml`: remove `-SNAPSHOT`, e.g. `0.1.0`
+2. Update `qalytix-ui/package.json`: remove `-alpha`, e.g. `0.1.0`
+3. Update `CHANGELOG.md`: rename `[Unreleased]` → `[0.1.0] - YYYY-MM-DD`
+4. Commit: `chore: release v0.1.0`
+5. Tag: `git tag -a v0.1.0 -m "Phase 1 — SaaS Foundation"`
+6. Push commit + tag
+7. Immediately bump to next SNAPSHOT: `0.2.0-SNAPSHOT` / `0.2.0-alpha`
+8. Commit: `chore: begin v0.2.0 development`
+
+---
+
 ## Git Workflow
 
 - Branch naming: `feature/<short-name>`, `fix/<short-name>`, `chore/<short-name>`

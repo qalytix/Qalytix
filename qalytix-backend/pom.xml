@@ -11,7 +11,7 @@
 
     <groupId>com.qalytix</groupId>
     <artifactId>qalytix-backend</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <name>qalytix-backend</name>
     <description>Qalytix — AI-Powered Test Intelligence Platform (Backend)</description>
 
