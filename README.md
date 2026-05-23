@@ -12,26 +12,25 @@ Monitor • Analyze • Predict
 
 ## Overview
 
-Qalytix is an intelligent test analytics and monitoring platform designed to transform test execution data into actionable insights.
+Qalytix is a **SaaS** test intelligence platform that transforms CI/CD execution data into actionable insights for engineering teams.
 
-Instead of simply showing build results, Qalytix aims to help engineering teams understand:
+Teams sign up, connect their Jenkins pipelines, and instantly get:
 
-- Why tests fail
-- Which modules are unstable
-- Which tests are flaky
-- Historical execution trends
-- Real-time execution insights
-- Predictive failure patterns
+- Real-time build and test execution monitoring
+- Failure trend analysis across jobs and modules
+- Flaky test detection with confidence scoring
+- Historical analytics and exportable reports
+- Alerts via Microsoft Teams and Slack
 
-Qalytix helps teams move beyond static reports and towards data-driven testing decisions.
+Qalytix helps teams move beyond static CI reports toward data-driven testing decisions.
 
 ---
 
 ## Vision
 
-Traditional reports tell teams **what happened**.
+Traditional CI reports tell teams **what happened**.
 
-Qalytix focuses on answering:
+Qalytix answers:
 
 - What happened?
 - Why did it happen?
@@ -40,111 +39,121 @@ Qalytix focuses on answering:
 
 ---
 
+## SaaS Model
+
+Qalytix is a multi-tenant SaaS product. Each organization gets an isolated workspace with:
+
+- Role-based team access (Owner, Admin, Member)
+- Self-service onboarding and org management
+- Subscription-based plans with usage limits
+- Stripe billing and self-service upgrades
+
+### Plans
+
+| Plan | Jenkins Connections | Users | Data Retention |
+|---|---|---|---|
+| Free | 1 | 3 | 7 days |
+| Pro | 5 | 15 | 90 days |
+| Enterprise | Unlimited | Unlimited | 1 year |
+
+---
+
 ## Planned Features
 
 ### Live Monitoring
-
 - Real-time execution dashboard
-- Running job status
-- Pipeline monitoring
+- Running build and job status
 - Execution duration tracking
 
 ### Test Intelligence
-
 - Failure trend analysis
 - Flaky test detection
-- Module-wise analytics
-- Failure clustering
+- Module-wise stability scoring
 - Root cause insights
 
 ### Notifications
-
 - Microsoft Teams integration
 - Slack integration
-- Real-time alerts
+- Configurable alert rules
 
 ### Reporting
-
 - Historical execution reports
 - Success/failure trends
-- Dashboard analytics
-- Exportable reports
+- Exportable CSV and PDF reports
 
 ---
 
 ## MVP (Version 0.1)
 
-Current development scope:
-
-- [ ] Jenkins integration
-- [ ] Live dashboard
-- [ ] Test execution monitoring
-- [ ] Failure trend analytics
-- [ ] Teams notifications
-- [ ] Historical reports
+- [ ] Multi-tenant auth (signup, org creation, team invitations)
+- [ ] Jenkins integration and data ingestion
+- [ ] Live dashboard with WebSocket real-time updates
+- [ ] Failure trend analytics and flaky test detection
+- [ ] Stripe billing and plan enforcement
+- [ ] Microsoft Teams and Slack notifications
+- [ ] Historical reports and export
 
 ---
 
 ## Tech Stack
 
 ### Backend
-- Java
-- Spring Boot
-- Spring Security
+- Java 21
+- Spring Boot 4.0.6
+- Spring Security (JWT, stateless)
 - Spring Data JPA
-- PostgreSQL
-- WebSocket
+- PostgreSQL (multi-tenant, shared schema)
+- Flyway (migrations)
+- Spring WebSocket (STOMP)
 
 ### Frontend
-- React
-- Tailwind CSS
+- React 18 + TypeScript (Vite)
+- Tailwind CSS v4
+- Zustand
 - Chart.js
 
+### Billing & Communication
+- Stripe
+- SendGrid
+
 ### Infrastructure
-- Docker
-- Nginx
+- Docker + Nginx
 
 ### Integrations
 - Jenkins
-- Selenium
-- Cucumber
-- GitHub
 - Microsoft Teams
+- Slack
+- (Future: GitHub, GitLab, Selenium, Cucumber)
 
 ---
 
 ## Project Structure
 
 ```text
-Qalytix
-│
-├── qalytix-backend
-├── qalytix-ui
-└── qalytix-docs
+Qalytix/
+├── qalytix-backend/   # Spring Boot multi-tenant API
+├── qalytix-ui/        # React SPA
+└── qalytix-docs/      # Documentation
 ```
+
+---
 
 ## Development Status
 
-Current Phase:
+**Current Phase:** MVP Planning — Phase 1 (SaaS Foundation + Auth) starting next.
 
-MVP Planning & Initial Development
+See [CLAUDE.md](CLAUDE.md) for the full phase-by-phase development plan and coding standards.
 
 ---
 
 ## Future Roadmap
 
 - AI-based failure prediction
-- Intelligent recommendations
-- Multi-project support
-- SaaS deployment
-- Plugin ecosystem
+- Intelligent test prioritization recommendations
+- GitHub / GitLab CI integration
+- SSO (SAML/OIDC) for Enterprise
+- Plugin and webhook ecosystem
 - Advanced analytics engine
-
----
-
-## Contributing
-
-Contributions, suggestions and feedback are welcome.
 
 ---
 
