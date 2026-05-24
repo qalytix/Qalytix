@@ -11,6 +11,7 @@ import com.qalytix.repository.BuildRepository;
 import com.qalytix.repository.JenkinsConfigRepository;
 import com.qalytix.repository.JobRepository;
 import com.qalytix.service.impl.JenkinsIngestionServiceImpl;
+import com.qalytix.websocket.BuildEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,6 +32,7 @@ class JenkinsIngestionServiceImplTest {
     @Mock JenkinsConfigRepository  jenkinsConfigRepository;
     @Mock JobRepository            jobRepository;
     @Mock BuildRepository          buildRepository;
+    @Mock BuildEventPublisher      buildEventPublisher;
 
     @InjectMocks JenkinsIngestionServiceImpl service;
 

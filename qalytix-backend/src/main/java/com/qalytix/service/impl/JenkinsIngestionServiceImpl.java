@@ -11,6 +11,8 @@ import com.qalytix.repository.BuildRepository;
 import com.qalytix.repository.JenkinsConfigRepository;
 import com.qalytix.repository.JobRepository;
 import com.qalytix.service.JenkinsIngestionService;
+import com.qalytix.websocket.BuildEventPayload;
+import com.qalytix.websocket.BuildEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,6 +31,7 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
     private final JenkinsConfigRepository  jenkinsConfigRepository;
     private final JobRepository            jobRepository;
     private final BuildRepository          buildRepository;
+    private final BuildEventPublisher      buildEventPublisher;
 
     @Override
     @Scheduled(fixedDelayString = "${app.jenkins.poll-delay-ms:300000}")
@@ -91,26 +94,30 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
     }
 
     private void upsertBuild(JenkinsConfig config, Job job, JenkinsBuildInfo info) {
-        buildRepository.findByJobIdAndBuildNumber(job.getId(), info.number())
-                .ifPresentOrElse(
-                        existing -> {
-                            existing.setStatus(toStatus(info));
-                            existing.setDurationMs(info.durationMs());
-                            existing.setFinishedAt(info.building() ? null : Instant.ofEpochMilli(info.timestampMs() + info.durationMs()));
-                            buildRepository.save(existing);
-                        },
-                        () -> buildRepository.save(Build.builder()
-                                .orgId(config.getOrgId())
-                                .jobId(job.getId())
-                                .buildNumber(info.number())
-                                .status(toStatus(info))
-                                .durationMs(info.durationMs())
-                                .startedAt(Instant.ofEpochMilli(info.timestampMs()))
-                                .finishedAt(info.building() ? null : Instant.ofEpochMilli(info.timestampMs() + info.durationMs()))
-                                .url(info.url())
-                                .triggeredBy(info.triggeredBy())
-                                .build())
-                );
+        BuildStatus status = toStatus(info);
+        Build saved = buildRepository.findByJobIdAndBuildNumber(job.getId(), info.number())
+                .map(existing -> {
+                    existing.setStatus(status);
+                    existing.setDurationMs(info.durationMs());
+                    existing.setFinishedAt(info.building() ? null : Instant.ofEpochMilli(info.timestampMs() + info.durationMs()));
+                    return buildRepository.save(existing);
+                })
+                .orElseGet(() -> buildRepository.save(Build.builder()
+                        .orgId(config.getOrgId())
+                        .jobId(job.getId())
+                        .buildNumber(info.number())
+                        .status(status)
+                        .durationMs(info.durationMs())
+                        .startedAt(Instant.ofEpochMilli(info.timestampMs()))
+                        .finishedAt(info.building() ? null : Instant.ofEpochMilli(info.timestampMs() + info.durationMs()))
+                        .url(info.url())
+                        .triggeredBy(info.triggeredBy())
+                        .build()));
+
+        buildEventPublisher.publishBuildEvent(new BuildEventPayload(
+                saved.getId(), job.getId(), config.getOrgId(),
+                job.getJenkinsJobName(), saved.getBuildNumber(),
+                status, saved.getDurationMs(), saved.getStartedAt(), saved.getFinishedAt()));
     }
 
     private BuildStatus toStatus(JenkinsBuildInfo info) {
