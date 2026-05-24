@@ -78,8 +78,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                             : "Stable";
                     double passRate = total > 0 ? Math.round(passed * 1000.0 / total) / 10.0 : 0.0;
                     double failRate = total > 0 ? Math.round(failed * 1000.0 / total) / 10.0 : 0.0;
+                    long noResult = p.getNoResultBuilds() != null ? p.getNoResultBuilds() : 0L;
                     return new JobStat(p.getJobName(), total,
-                            p.getLatestBuildStatus(), yest, today, trendLabel, passRate, failRate);
+                            p.getLatestBuildStatus(), yest, today, trendLabel, passRate, failRate, noResult);
                 })
                 .toList();
 

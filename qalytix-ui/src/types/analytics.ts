@@ -36,6 +36,7 @@ export interface JobStat {
   trend: string;
   passPercentage: number;
   failPercentage: number;
+  noResultBuilds: number;
 }
 
 export interface AnalyticsSummaryResponse {

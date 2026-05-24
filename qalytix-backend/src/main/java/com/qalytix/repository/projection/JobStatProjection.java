@@ -8,4 +8,5 @@ public interface JobStatProjection {
     Long getTodayPassed();
     Long getPassedTotal();
     Long getFailedTotal();
+    Long getNoResultBuilds();
 }

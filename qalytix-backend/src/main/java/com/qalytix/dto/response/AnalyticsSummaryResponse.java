@@ -32,6 +32,7 @@ public record AnalyticsSummaryResponse(
             long todayPassed,
             String trend,
             double passPercentage,
-            double failPercentage
+            double failPercentage,
+            long noResultBuilds
     ) {}
 }

@@ -11,6 +11,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.1] - 2026-05-24
+
+### Backend
+
+**Added**
+- `findJobStats` query now uses `LEFT JOIN` so jobs with completed builds but zero ingested test results appear in the Job Summary table (previously excluded by the inner join)
+- `noResultBuilds` subquery per job: counts completed (non-`IN_PROGRESS`) builds in the window that have no associated `test_results` rows
+- `JobStatProjection.getNoResultBuilds()` getter; `AnalyticsSummaryResponse.JobStat` includes `noResultBuilds` field
+- `findJobStats` now filters to jobs with at least one build in the date window (via `EXISTS` subquery) to avoid showing stale, never-built jobs
+
+### Frontend
+
+**Added**
+- Job Summary table: search input with clear button — filters rows by job name as you type
+- Status filter pill group — All / Success / Failure / Unstable / Aborted (buttons generated from live data)
+- "Warnings only" toggle — visible when any job has `noResultBuilds > 0`; narrows table to jobs needing attention
+- Result counter ("3 of 4 jobs") and "Clear filters" link appear when any filter is active
+- Warning indicator on jobs with `noResultBuilds > 0`: amber row background + `⚠` icon next to test count with tooltip explaining the fix; Pass % / Fail % show "—" when no test data exists at all
+
+**Fixed**
+- `AlertTriangle title` prop replaced with `<span title={...}>` wrapper to satisfy Lucide's TypeScript types
+
+---
+
 ## [0.4.0] - 2026-05-24
 
 Phase 4 — Test Analytics & Intelligence

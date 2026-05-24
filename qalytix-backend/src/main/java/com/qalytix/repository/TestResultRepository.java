@@ -106,12 +106,24 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
                    SUM(CASE WHEN (b.started_at AT TIME ZONE 'UTC')::date = CURRENT_DATE
                             AND tr.status = 'PASSED' THEN 1 ELSE 0 END) AS todayPassed,
                    SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END) AS passedTotal,
-                   SUM(CASE WHEN tr.status = 'FAILED' THEN 1 ELSE 0 END) AS failedTotal
+                   SUM(CASE WHEN tr.status = 'FAILED' THEN 1 ELSE 0 END) AS failedTotal,
+                   (SELECT COUNT(*)
+                    FROM builds b2
+                    WHERE b2.job_id = j.id
+                      AND b2.org_id = :orgId
+                      AND b2.status NOT IN ('IN_PROGRESS')
+                      AND b2.started_at >= :since
+                      AND NOT EXISTS (
+                          SELECT 1 FROM test_results tr2 WHERE tr2.build_id = b2.id
+                      )) AS noResultBuilds
             FROM jobs j
-            JOIN builds b ON b.job_id = j.id AND b.org_id = :orgId
-            JOIN test_results tr ON tr.build_id = b.id AND tr.org_id = :orgId
+            LEFT JOIN builds b ON b.job_id = j.id AND b.org_id = :orgId AND b.started_at >= :since
+            LEFT JOIN test_results tr ON tr.build_id = b.id AND tr.org_id = :orgId
             WHERE j.org_id = :orgId
-              AND b.started_at >= :since
+              AND EXISTS (
+                  SELECT 1 FROM builds b3
+                  WHERE b3.job_id = j.id AND b3.org_id = :orgId AND b3.started_at >= :since
+              )
             GROUP BY j.id, j.display_name, j.jenkins_job_name, j.last_build_status
             ORDER BY jobName
             """, nativeQuery = true)

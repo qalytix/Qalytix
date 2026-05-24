@@ -12,7 +12,7 @@ import {
   Filler,
 } from 'chart.js'
 import { Line, Bar } from 'react-chartjs-2'
-import { AlertTriangle, TrendingDown, Layers, RefreshCw, Table2, TrendingUp, Minus } from 'lucide-react'
+import { AlertTriangle, TrendingDown, Layers, RefreshCw, Table2, TrendingUp, Minus, Search, X } from 'lucide-react'
 import { getAnalyticsSummary } from '../../api/analytics'
 import type { AnalyticsSummaryResponse, JobStat } from '../../types/analytics'
 
@@ -79,43 +79,143 @@ function TrendBadge({ trend }: { trend: string }) {
 }
 
 function JobStatsTable({ rows }: { rows: JobStat[] }) {
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('ALL')
+  const [warningsOnly, setWarningsOnly] = useState(false)
+
   if (rows.length === 0)
     return <p className="text-slate-400 text-sm text-center py-10">No job data for this period.</p>
 
+  const statuses = [...new Set(rows.map(r => r.latestBuildStatus).filter(Boolean))]
+  const hasWarnings = rows.some(r => r.noResultBuilds > 0)
+
+  const filtered = rows
+    .filter(r => !search || r.jobName.toLowerCase().includes(search.toLowerCase()))
+    .filter(r => statusFilter === 'ALL' || r.latestBuildStatus === statusFilter)
+    .filter(r => !warningsOnly || r.noResultBuilds > 0)
+
+  const clearable = search || statusFilter !== 'ALL' || warningsOnly
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-slate-500 border-b border-slate-100 text-xs uppercase tracking-wide">
-            <th className="pb-3 font-medium">Job</th>
-            <th className="pb-3 font-medium text-right">Tests</th>
-            <th className="pb-3 font-medium">Latest Build</th>
-            <th className="pb-3 font-medium text-right">Yesterday ✓</th>
-            <th className="pb-3 font-medium text-right">Today ✓</th>
-            <th className="pb-3 font-medium">Trend</th>
-            <th className="pb-3 font-medium text-right">Pass %</th>
-            <th className="pb-3 font-medium text-right">Fail %</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
-              <td className="py-3 font-medium text-slate-800 max-w-[200px] truncate" title={r.jobName}>{r.jobName}</td>
-              <td className="py-3 text-right text-slate-600">{r.totalTests.toLocaleString()}</td>
-              <td className="py-3"><BuildBadge status={r.latestBuildStatus ?? 'UNKNOWN'} /></td>
-              <td className="py-3 text-right text-slate-600">{r.yesterdayPassed}</td>
-              <td className="py-3 text-right text-slate-600">{r.todayPassed}</td>
-              <td className="py-3"><TrendBadge trend={r.trend} /></td>
-              <td className={`py-3 text-right font-medium ${r.passPercentage >= 90 ? 'text-green-600' : r.passPercentage >= 70 ? 'text-amber-600' : 'text-red-500'}`}>
-                {r.passPercentage}%
-              </td>
-              <td className={`py-3 text-right font-medium ${r.failPercentage <= 10 ? 'text-slate-400' : r.failPercentage <= 30 ? 'text-amber-600' : 'text-red-500'}`}>
-                {r.failPercentage}%
-              </td>
-            </tr>
+    <div>
+      {/* Filter bar */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search jobs…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-8 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs">
+          {(['ALL', ...statuses] as string[]).map(s => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 font-medium transition-colors ${
+                statusFilter === s
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {s === 'ALL' ? 'All' : s.charAt(0) + s.slice(1).toLowerCase()}
+            </button>
           ))}
-        </tbody>
-      </table>
+        </div>
+
+        {hasWarnings && (
+          <button
+            onClick={() => setWarningsOnly(w => !w)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+              warningsOnly
+                ? 'bg-amber-100 border-amber-300 text-amber-700'
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Warnings only
+          </button>
+        )}
+
+        <span className="text-xs text-slate-400 ml-auto">
+          {filtered.length === rows.length
+            ? `${rows.length} job${rows.length !== 1 ? 's' : ''}`
+            : `${filtered.length} of ${rows.length} jobs`}
+        </span>
+
+        {clearable && (
+          <button
+            onClick={() => { setSearch(''); setStatusFilter('ALL'); setWarningsOnly(false) }}
+            className="text-xs text-indigo-600 hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-slate-400 text-sm text-center py-10">No jobs match the current filters.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-slate-500 border-b border-slate-100 text-xs uppercase tracking-wide">
+                <th className="pb-3 font-medium">Job</th>
+                <th className="pb-3 font-medium text-right">Tests</th>
+                <th className="pb-3 font-medium">Latest Build</th>
+                <th className="pb-3 font-medium text-right">Yesterday ✓</th>
+                <th className="pb-3 font-medium text-right">Today ✓</th>
+                <th className="pb-3 font-medium">Trend</th>
+                <th className="pb-3 font-medium text-right">Pass %</th>
+                <th className="pb-3 font-medium text-right">Fail %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r, i) => {
+                const noResults = r.noResultBuilds > 0 && r.totalTests === 0
+                const partialWarn = r.noResultBuilds > 0 && r.totalTests > 0
+                const warnTip = `${r.noResultBuilds} completed build(s) with no test results — add "Publish JUnit test result report" in Jenkins (pattern: target/surefire-reports/**/*.xml)`
+                return (
+                  <tr key={i} className={`border-b border-slate-50 hover:bg-slate-50 ${noResults ? 'bg-amber-50' : ''}`}>
+                    <td className="py-3 font-medium text-slate-800 max-w-[200px] truncate" title={r.jobName}>
+                      {r.jobName}
+                    </td>
+                    <td className="py-3 text-right text-slate-600">
+                      <span className="inline-flex items-center justify-end gap-1.5">
+                        {r.totalTests.toLocaleString()}
+                        {(noResults || partialWarn) && (
+                          <span title={warnTip} className="inline-flex">
+                            <AlertTriangle className={`w-3.5 h-3.5 shrink-0 ${noResults ? 'text-amber-500' : 'text-amber-400'}`} />
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="py-3"><BuildBadge status={r.latestBuildStatus ?? 'UNKNOWN'} /></td>
+                    <td className="py-3 text-right text-slate-600">{r.yesterdayPassed}</td>
+                    <td className="py-3 text-right text-slate-600">{r.todayPassed}</td>
+                    <td className="py-3"><TrendBadge trend={r.trend} /></td>
+                    <td className={`py-3 text-right font-medium ${noResults ? 'text-slate-400' : r.passPercentage >= 90 ? 'text-green-600' : r.passPercentage >= 70 ? 'text-amber-600' : 'text-red-500'}`}>
+                      {noResults ? '—' : `${r.passPercentage}%`}
+                    </td>
+                    <td className={`py-3 text-right font-medium ${noResults ? 'text-slate-400' : r.failPercentage <= 10 ? 'text-slate-400' : r.failPercentage <= 30 ? 'text-amber-600' : 'text-red-500'}`}>
+                      {noResults ? '—' : `${r.failPercentage}%`}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
