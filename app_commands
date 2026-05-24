@@ -1,0 +1,5 @@
+./dev.sh start    # starts postgres → backend → frontend, waits for each to be ready
+./dev.sh stop     # graceful shutdown in reverse order
+./dev.sh restart  # stop + start
+./dev.sh status   # shows running/stopped for all three services
+./dev.sh logs     # tails backend.log + ui.log together
