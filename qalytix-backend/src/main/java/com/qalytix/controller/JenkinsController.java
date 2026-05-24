@@ -22,7 +22,7 @@ public class JenkinsController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     public ApiResponse<JenkinsConfigResponse> create(@Valid @RequestBody CreateJenkinsConfigRequest request) {
         return ApiResponse.ok(jenkinsConfigService.create(request), "Jenkins config created");
     }
@@ -33,7 +33,7 @@ public class JenkinsController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     public ApiResponse<JenkinsConfigResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody UpdateJenkinsConfigRequest request) {
@@ -42,20 +42,20 @@ public class JenkinsController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     public void delete(@PathVariable Long id) {
         jenkinsConfigService.delete(id);
     }
 
     @PostMapping("/{id}/test-connection")
-    @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     public ApiResponse<Void> testConnection(@PathVariable Long id) {
         jenkinsConfigService.testConnection(id);
         return ApiResponse.ok("Connection successful");
     }
 
     @PostMapping("/{id}/sync")
-    @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     public ApiResponse<Void> sync(@PathVariable Long id) {
         jenkinsConfigService.triggerSync(id);
         return ApiResponse.ok("Sync triggered");

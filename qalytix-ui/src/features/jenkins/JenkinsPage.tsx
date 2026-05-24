@@ -122,12 +122,11 @@ export default function JenkinsPage() {
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             {([
               ['name', 'Name', 'text', 'My Jenkins'],
-              ['url', 'Jenkins URL', 'url', 'http://jenkins.company.com'],
+              ['url', 'Jenkins URL', 'url', 'http://localhost:8080'],
               ['username', 'Username', 'text', 'admin'],
               ['apiToken', editing ? 'API Token (leave blank to keep)' : 'API Token', 'password', ''],
-              ['pollInterval', 'Poll Interval (cron)', 'text', '*/5 * * * *'],
             ] as const).map(([key, label, type, placeholder]) => (
-              <div key={key} className={key === 'pollInterval' ? 'col-span-2' : ''}>
+              <div key={key}>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
                 <input
                   type={type}
@@ -138,6 +137,39 @@ export default function JenkinsPage() {
                 />
               </div>
             ))}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Poll Interval</label>
+              <input
+                type="text"
+                required
+                placeholder="*/5 * * * *"
+                {...field('pollInterval')}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Cron expression: <span className="font-mono text-slate-600">minute  hour  day  month  weekday</span>
+              </p>
+              <div className="mt-1 grid grid-cols-3 gap-x-4 gap-y-0.5 text-xs text-slate-400">
+                {[
+                  ['*/5 * * * *', 'Every 5 minutes'],
+                  ['*/15 * * * *', 'Every 15 minutes'],
+                  ['0 * * * *', 'Every hour'],
+                  ['0 */2 * * *', 'Every 2 hours'],
+                  ['0 8-18 * * 1-5', 'Hourly, business hours'],
+                  ['H/5 * * * *', 'Every 5 min (Jenkins hash)'],
+                ].map(([expr, desc]) => (
+                  <button
+                    key={expr}
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, pollInterval: expr }))}
+                    className="text-left hover:text-indigo-600 transition-colors py-0.5"
+                  >
+                    <span className="font-mono text-slate-500">{expr}</span>
+                    <span className="ml-1 text-slate-400">— {desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="col-span-2 flex gap-3 justify-end">
               <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50">Cancel</button>
               <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors">
