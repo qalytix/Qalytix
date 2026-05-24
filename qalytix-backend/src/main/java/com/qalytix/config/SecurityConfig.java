@@ -28,7 +28,8 @@ public class SecurityConfig {
             "/actuator/health",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+            "/ws/**"   // SockJS HTTP handshake; STOMP CONNECT frame is auth'd by StompAuthChannelInterceptor
     };
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -41,6 +42,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, e) -> res.sendError(401, "Unauthorized"))
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

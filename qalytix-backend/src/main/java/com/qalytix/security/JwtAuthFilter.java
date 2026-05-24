@@ -38,9 +38,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
             chain.doFilter(request, response);
         } finally {
-            // Always clear thread-locals to prevent leaks in pooled threads
+            // Only clear the tenant thread-local; Spring Security 7's
+            // SecurityContextHolderFilter manages SecurityContext cleanup itself.
             TenantContext.clear();
-            SecurityContextHolder.clearContext();
         }
     }
 

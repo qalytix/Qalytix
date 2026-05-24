@@ -63,6 +63,26 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 })
                 .toList();
 
-        return new AnalyticsSummaryResponse(trend, topFailing, flaky, modules);
+        List<JobStat> jobStats = testResultRepository
+                .findJobStats(orgId, since)
+                .stream()
+                .map(p -> {
+                    long total   = p.getTotalTests() != null ? p.getTotalTests() : 0L;
+                    long passed  = p.getPassedTotal() != null ? p.getPassedTotal() : 0L;
+                    long failed  = p.getFailedTotal() != null ? p.getFailedTotal() : 0L;
+                    long yest    = p.getYesterdayPassed() != null ? p.getYesterdayPassed() : 0L;
+                    long today   = p.getTodayPassed() != null ? p.getTodayPassed() : 0L;
+                    String trendLabel = (yest == 0 && today == 0) ? "—"
+                            : today > yest ? "Up"
+                            : today < yest ? "Down"
+                            : "Stable";
+                    double passRate = total > 0 ? Math.round(passed * 1000.0 / total) / 10.0 : 0.0;
+                    double failRate = total > 0 ? Math.round(failed * 1000.0 / total) / 10.0 : 0.0;
+                    return new JobStat(p.getJobName(), total,
+                            p.getLatestBuildStatus(), yest, today, trendLabel, passRate, failRate);
+                })
+                .toList();
+
+        return new AnalyticsSummaryResponse(trend, topFailing, flaky, modules, jobStats);
     }
 }

@@ -6,7 +6,8 @@ public record AnalyticsSummaryResponse(
         List<FailureTrendPoint>    failureTrend,
         List<TopFailingTest>       topFailingTests,
         List<FlakyTest>            flakyTests,
-        List<ModuleStability>      moduleStability
+        List<ModuleStability>      moduleStability,
+        List<JobStat>              jobStats
 ) {
     public record FailureTrendPoint(String date, long total, long failed, long passed) {}
 
@@ -22,4 +23,15 @@ public record AnalyticsSummaryResponse(
     ) {}
 
     public record ModuleStability(String moduleName, long total, long passed, double passRate) {}
+
+    public record JobStat(
+            String jobName,
+            long totalTests,
+            String latestBuildStatus,
+            long yesterdayPassed,
+            long todayPassed,
+            String trend,
+            double passPercentage,
+            double failPercentage
+    ) {}
 }

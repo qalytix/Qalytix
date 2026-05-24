@@ -27,9 +27,21 @@ export interface ModuleStability {
   passRate: number;
 }
 
+export interface JobStat {
+  jobName: string;
+  totalTests: number;
+  latestBuildStatus: string;
+  yesterdayPassed: number;
+  todayPassed: number;
+  trend: string;
+  passPercentage: number;
+  failPercentage: number;
+}
+
 export interface AnalyticsSummaryResponse {
   failureTrend: FailureTrendPoint[];
   topFailingTests: TopFailingTest[];
   flakyTests: FlakyTest[];
   moduleStability: ModuleStability[];
+  jobStats: JobStat[];
 }

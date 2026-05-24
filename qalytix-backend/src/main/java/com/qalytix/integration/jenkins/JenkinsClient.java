@@ -76,7 +76,22 @@ public class JenkinsClient {
         }
     }
 
+    public JenkinsTestReportResponse fetchTestReport(JenkinsConfig config, String jobName, int buildNumber) {
+        try {
+            return client(config)
+                    .get()
+                    .uri("/job/{job}/{build}/testReport/api/json?tree=suites[name,cases[className,name,status,duration,errorDetails]]",
+                            jobName, buildNumber)
+                    .retrieve()
+                    .body(JenkinsTestReportResponse.class);
+        } catch (RestClientException e) {
+            log.debug("No test report available for {}/{}: {}", jobName, buildNumber, e.getMessage());
+            return null;
+        }
+    }
+
     public void testConnection(JenkinsConfig config) {
+        log.debug("Testing Jenkins connection: url={} username={}", config.getUrl(), config.getUsername());
         try {
             var status = client(config)
                     .get()

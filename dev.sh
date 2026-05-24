@@ -49,7 +49,7 @@ stop_process() {
     # wait up to 10 s for clean exit
     local i=0
     while kill -0 "$pid" 2>/dev/null && (( i < 20 )); do
-      sleep 0.5; (( i++ ))
+      sleep 0.5; (( i++ )) || true
     done
     if kill -0 "$pid" 2>/dev/null; then
       warn "$name did not exit cleanly, sending SIGKILL"
@@ -73,7 +73,7 @@ wait_for_port() {
       error "$name did not become ready on port $port within 30 s."
       return 1
     fi
-    sleep 0.5; (( i++ ))
+    sleep 0.5; (( i++ )) || true
   done
 }
 
@@ -94,7 +94,7 @@ start_postgres() {
       error "Postgres did not become healthy in time."
       exit 1
     fi
-    sleep 0.5; (( i++ ))
+    sleep 0.5; (( i++ )) || true
   done
   success "Postgres ready."
 }
@@ -147,7 +147,7 @@ stop_backend() {
     kill -TERM "$pid"     2>/dev/null || true
     local i=0
     while kill -0 "$pid" 2>/dev/null && (( i < 20 )); do
-      sleep 0.5; (( i++ ))
+      sleep 0.5; (( i++ )) || true
     done
     kill -9 "$pid" 2>/dev/null || true
     rm -f "$BACKEND_PID_FILE"

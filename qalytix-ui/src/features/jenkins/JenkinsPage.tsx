@@ -74,11 +74,12 @@ export default function JenkinsPage() {
     try {
       await testJenkinsConnection(id)
       setFeedback({ id, msg: 'Connection successful', ok: true })
-    } catch {
-      setFeedback({ id, msg: 'Connection failed', ok: false })
+    } catch (err: any) {
+      const msg = err.response?.data?.detail ?? err.response?.data?.message ?? 'Connection failed'
+      setFeedback({ id, msg, ok: false })
     } finally {
       setTestingId(null)
-      setTimeout(() => setFeedback(null), 3000)
+      setTimeout(() => setFeedback(null), 6000)
     }
   }
 
@@ -88,11 +89,12 @@ export default function JenkinsPage() {
       await syncJenkins(id)
       setFeedback({ id, msg: 'Sync triggered', ok: true })
       await load()
-    } catch {
-      setFeedback({ id, msg: 'Sync failed', ok: false })
+    } catch (err: any) {
+      const msg = err.response?.data?.detail ?? err.response?.data?.message ?? 'Sync failed'
+      setFeedback({ id, msg, ok: false })
     } finally {
       setSyncingId(null)
-      setTimeout(() => setFeedback(null), 3000)
+      setTimeout(() => setFeedback(null), 6000)
     }
   }
 
@@ -131,10 +133,17 @@ export default function JenkinsPage() {
                 <input
                   type={type}
                   required={key !== 'apiToken' || !editing}
-                  placeholder={placeholder}
+                  placeholder={key === 'apiToken' && editing ? 'Leave blank to keep existing token' : placeholder}
+                  autoComplete={key === 'apiToken' ? 'new-password' : 'off'}
                   {...field(key)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {key === 'username' && (
+                  <p className="mt-1 text-xs text-slate-400">Your Jenkins login ID — check <span className="font-mono">Jenkins → your avatar → Configure</span> for the exact value.</p>
+                )}
+                {key === 'apiToken' && editing && (
+                  <p className="mt-1 text-xs text-slate-400">Token is saved securely — only enter a new value to replace it.</p>
+                )}
               </div>
             ))}
             <div className="col-span-2">

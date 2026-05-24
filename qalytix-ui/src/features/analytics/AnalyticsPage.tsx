@@ -12,9 +12,9 @@ import {
   Filler,
 } from 'chart.js'
 import { Line, Bar } from 'react-chartjs-2'
-import { AlertTriangle, TrendingDown, Layers, RefreshCw } from 'lucide-react'
+import { AlertTriangle, TrendingDown, Layers, RefreshCw, Table2, TrendingUp, Minus } from 'lucide-react'
 import { getAnalyticsSummary } from '../../api/analytics'
-import type { AnalyticsSummaryResponse } from '../../types/analytics'
+import type { AnalyticsSummaryResponse, JobStat } from '../../types/analytics'
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -49,6 +49,73 @@ function FlakinessBar({ score }: { score: number }) {
         <div className={`${color} h-2 rounded-full`} style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs font-medium text-slate-600 w-10 text-right">{pct}%</span>
+    </div>
+  )
+}
+
+const BUILD_STATUS_STYLE: Record<string, string> = {
+  SUCCESS:     'bg-green-100 text-green-700',
+  FAILURE:     'bg-red-100 text-red-700',
+  UNSTABLE:    'bg-amber-100 text-amber-700',
+  ABORTED:     'bg-slate-100 text-slate-500',
+  IN_PROGRESS: 'bg-blue-100 text-blue-700',
+  UNKNOWN:     'bg-slate-100 text-slate-400',
+}
+
+function BuildBadge({ status }: { status: string }) {
+  const cls = BUILD_STATUS_STYLE[status] ?? BUILD_STATUS_STYLE.UNKNOWN
+  return (
+    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cls}`}>
+      {status === 'IN_PROGRESS' ? 'Running' : status.charAt(0) + status.slice(1).toLowerCase()}
+    </span>
+  )
+}
+
+function TrendBadge({ trend }: { trend: string }) {
+  if (trend === 'Up')   return <span className="flex items-center gap-1 text-green-600 text-xs font-medium"><TrendingUp className="w-3.5 h-3.5" />Up</span>
+  if (trend === 'Down') return <span className="flex items-center gap-1 text-red-500 text-xs font-medium"><TrendingDown className="w-3.5 h-3.5" />Down</span>
+  if (trend === 'Stable') return <span className="flex items-center gap-1 text-slate-500 text-xs font-medium"><Minus className="w-3.5 h-3.5" />Stable</span>
+  return <span className="text-slate-400 text-xs">—</span>
+}
+
+function JobStatsTable({ rows }: { rows: JobStat[] }) {
+  if (rows.length === 0)
+    return <p className="text-slate-400 text-sm text-center py-10">No job data for this period.</p>
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-slate-500 border-b border-slate-100 text-xs uppercase tracking-wide">
+            <th className="pb-3 font-medium">Job</th>
+            <th className="pb-3 font-medium text-right">Tests</th>
+            <th className="pb-3 font-medium">Latest Build</th>
+            <th className="pb-3 font-medium text-right">Yesterday ✓</th>
+            <th className="pb-3 font-medium text-right">Today ✓</th>
+            <th className="pb-3 font-medium">Trend</th>
+            <th className="pb-3 font-medium text-right">Pass %</th>
+            <th className="pb-3 font-medium text-right">Fail %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
+              <td className="py-3 font-medium text-slate-800 max-w-[200px] truncate" title={r.jobName}>{r.jobName}</td>
+              <td className="py-3 text-right text-slate-600">{r.totalTests.toLocaleString()}</td>
+              <td className="py-3"><BuildBadge status={r.latestBuildStatus ?? 'UNKNOWN'} /></td>
+              <td className="py-3 text-right text-slate-600">{r.yesterdayPassed}</td>
+              <td className="py-3 text-right text-slate-600">{r.todayPassed}</td>
+              <td className="py-3"><TrendBadge trend={r.trend} /></td>
+              <td className={`py-3 text-right font-medium ${r.passPercentage >= 90 ? 'text-green-600' : r.passPercentage >= 70 ? 'text-amber-600' : 'text-red-500'}`}>
+                {r.passPercentage}%
+              </td>
+              <td className={`py-3 text-right font-medium ${r.failPercentage <= 10 ? 'text-slate-400' : r.failPercentage <= 30 ? 'text-amber-600' : 'text-red-500'}`}>
+                {r.failPercentage}%
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -173,6 +240,12 @@ export default function AnalyticsPage() {
 
       {data && (
         <div className="space-y-6">
+          {/* Job Stats Table */}
+          <Card>
+            <SectionHeader icon={Table2} title="Job Summary" />
+            <JobStatsTable rows={data.jobStats ?? []} />
+          </Card>
+
           {/* Failure Trend */}
           <Card>
             <SectionHeader icon={TrendingDown} title="Failure Trend" />
