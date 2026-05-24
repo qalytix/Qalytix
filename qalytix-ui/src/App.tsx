@@ -6,6 +6,8 @@ import AppShell from './components/layout/AppShell'
 import DashboardPage from './features/dashboard/DashboardPage'
 import AnalyticsPage from './features/analytics/AnalyticsPage'
 import JenkinsPage from './features/jenkins/JenkinsPage'
+import JobsPage from './features/jenkins/JobsPage'
+import BuildsPage from './features/jenkins/BuildsPage'
 import MembersPage from './features/members/MembersPage'
 import NotificationsPage from './features/notifications/NotificationsPage'
 import ReportsPage from './features/reports/ReportsPage'
@@ -20,14 +22,16 @@ const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { index: true,           element: <Navigate to="/dashboard" replace /> },
-          { path: 'dashboard',     element: <DashboardPage /> },
-          { path: 'analytics',     element: <AnalyticsPage /> },
-          { path: 'jenkins',       element: <JenkinsPage /> },
-          { path: 'members',       element: <MembersPage /> },
-          { path: 'notifications', element: <NotificationsPage /> },
-          { path: 'reports',       element: <ReportsPage /> },
-          { path: 'billing',       element: <BillingPage /> },
+          { index: true,                      element: <Navigate to="/dashboard" replace /> },
+          { path: 'dashboard',                element: <DashboardPage /> },
+          { path: 'analytics',                element: <AnalyticsPage /> },
+          { path: 'jenkins',                  element: <JenkinsPage /> },
+          { path: 'jobs',                     element: <JobsPage /> },
+          { path: 'jobs/:jobId/builds',       element: <BuildsPage /> },
+          { path: 'members',                  element: <MembersPage /> },
+          { path: 'notifications',            element: <NotificationsPage /> },
+          { path: 'reports',                  element: <ReportsPage /> },
+          { path: 'billing',                  element: <BillingPage /> },
         ],
       },
     ],

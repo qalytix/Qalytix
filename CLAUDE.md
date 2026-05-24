@@ -293,24 +293,24 @@ qalytix-ui/src/
 
 ---
 
-### Phase 2 — Jenkins Integration & Data Ingestion
+### Phase 2 — Jenkins Integration & Data Ingestion ✅
 **Goal:** Connect Jenkins, sync jobs and build history, scoped per org.
 
 #### Backend
-- [ ] Migrations: `jenkins_configs`, `jobs`, `builds`
-- [ ] `JenkinsConfig` entity (org-scoped: URL, credentials, polling interval)
-- [ ] `JenkinsClient` (`integration/`): fetch jobs list, fetch build details via Jenkins REST API
-- [ ] `JenkinsIngestionService`: sync jobs + builds, upsert logic
-- [ ] Scheduled polling per active Jenkins config (`@Scheduled` + configurable cron)
-- [ ] `PlanGuard` check on Jenkins connection count before creation
-- [ ] `JenkinsController`: CRUD for Jenkins configs, manual sync trigger, test connection
-- [ ] `JobController`: list jobs (org-scoped), job detail
-- [ ] `BuildController`: builds for a job, build detail
+- [x] Migrations: `jenkins_configs`, `jobs`, `builds`
+- [x] `JenkinsConfig` entity (org-scoped: URL, credentials, polling interval)
+- [x] `JenkinsClient` (`integration/`): fetch jobs list, fetch build details via Jenkins REST API
+- [x] `JenkinsIngestionService`: sync jobs + builds, upsert logic
+- [x] Scheduled polling per active Jenkins config (`@Scheduled` + configurable cron)
+- [x] `PlanGuard` check on Jenkins connection count before creation
+- [x] `JenkinsController`: CRUD for Jenkins configs, manual sync trigger, test connection
+- [x] `JobController`: list jobs (org-scoped), job detail
+- [x] `BuildController`: builds for a job, build detail
 
 #### Frontend
-- [ ] Jenkins settings page: add/edit server config, test connection button
-- [ ] Jobs list page: all synced jobs with last build status badge
-- [ ] Build history page for a selected job with pass/fail timeline
+- [x] Jenkins settings page: add/edit server config, test connection button
+- [x] Jobs list page: all synced jobs with last build status badge
+- [x] Build history page for a selected job with pass/fail timeline
 
 **Deliverable:** Org admin configures Jenkins, jobs and build history appear in the app.
 
