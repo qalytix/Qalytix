@@ -1,0 +1,7 @@
+# dev script logs and PID files
+.dev-logs/
+
+# environment files
+.env
+.env.*
+!.env.example
