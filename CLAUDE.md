@@ -343,23 +343,23 @@ qalytix-ui/src/
 **Goal:** Flaky test detection, failure trends, and module stability — the core value.
 
 #### Backend
-- [ ] Migration: `test_results` (individual test case outcomes per build)
-- [ ] JUnit XML parser ingested from Jenkins build artifacts
-- [ ] `AnalyticsService`:
+- [x] Migration: `test_results` (individual test case outcomes per build)
+- [x] JUnit XML parser ingested from Jenkins build artifacts
+- [x] `AnalyticsService`:
   - Failure rate by job/module over a configurable time window
   - Flaky test detection (alternating pass/fail pattern, configurable threshold)
   - Top N failing tests ranking
   - Module-wise stability score
-- [ ] `AnalyticsController`: REST endpoints with date-range + pagination support
-- [ ] `PlanGuard` check: analytics data retention window gated by plan
+- [x] `AnalyticsController`: REST endpoints with date-range + pagination support
+- [x] `PlanGuard` check: analytics data retention window gated by plan
 
 #### Frontend
-- [ ] Analytics dashboard page
-- [ ] Failure trend line chart (Chart.js) — by day/week
-- [ ] Flaky tests table with flakiness score, trend indicator
-- [ ] Top failing tests bar chart
-- [ ] Module stability table or heatmap
-- [ ] Date range picker, job filter
+- [x] Analytics dashboard page
+- [x] Failure trend line chart (Chart.js) — by day/week
+- [x] Flaky tests table with flakiness score, trend indicator
+- [x] Top failing tests bar chart
+- [x] Module stability table or heatmap
+- [x] Date range picker, job filter
 
 **Deliverable:** Engineers identify unreliable tests and modules without digging through CI logs.
 

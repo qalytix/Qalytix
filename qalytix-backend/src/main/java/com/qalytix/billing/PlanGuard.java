@@ -54,11 +54,27 @@ public class PlanGuard {
         };
     }
 
+    public int clampDataRetentionDays(Long orgId, int requestedDays) {
+        Plan plan = orgRepository.findById(orgId)
+                .orElseThrow(() -> new BadRequestException("Organization not found"))
+                .getPlan();
+        int maxDays = retentionDays(plan);
+        return Math.min(requestedDays, maxDays);
+    }
+
     private int memberLimit(Plan plan) {
         return switch (plan) {
             case FREE       -> 3;
             case PRO        -> 15;
             case ENTERPRISE -> -1;
+        };
+    }
+
+    private int retentionDays(Plan plan) {
+        return switch (plan) {
+            case FREE       -> 7;
+            case PRO        -> 90;
+            case ENTERPRISE -> 365;
         };
     }
 }

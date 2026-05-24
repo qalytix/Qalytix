@@ -49,6 +49,33 @@ public class JenkinsClient {
         }
     }
 
+    public List<JenkinsArtifactInfo> fetchArtifacts(JenkinsConfig config, String jobName, int buildNumber) {
+        try {
+            JenkinsArtifactsResponse response = client(config)
+                    .get()
+                    .uri("/job/{job}/{build}/api/json?tree=artifacts[fileName,relativePath]", jobName, buildNumber)
+                    .retrieve()
+                    .body(JenkinsArtifactsResponse.class);
+            return response != null && response.artifacts() != null ? response.artifacts() : List.of();
+        } catch (RestClientException e) {
+            log.warn("Failed to fetch artifacts for {}/{}: {}", jobName, buildNumber, e.getMessage());
+            return List.of();
+        }
+    }
+
+    public String downloadArtifact(JenkinsConfig config, String jobName, int buildNumber, String relativePath) {
+        try {
+            return client(config)
+                    .get()
+                    .uri("/job/{job}/{build}/artifact/{path}", jobName, buildNumber, relativePath)
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientException e) {
+            log.warn("Failed to download artifact {}: {}", relativePath, e.getMessage());
+            return null;
+        }
+    }
+
     public void testConnection(JenkinsConfig config) {
         try {
             var status = client(config)

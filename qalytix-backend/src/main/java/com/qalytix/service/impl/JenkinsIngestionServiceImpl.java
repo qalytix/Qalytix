@@ -11,6 +11,7 @@ import com.qalytix.repository.BuildRepository;
 import com.qalytix.repository.JenkinsConfigRepository;
 import com.qalytix.repository.JobRepository;
 import com.qalytix.service.JenkinsIngestionService;
+import com.qalytix.service.TestResultIngestionService;
 import com.qalytix.websocket.BuildEventPayload;
 import com.qalytix.websocket.BuildEventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +31,9 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
     private final JenkinsClient            jenkinsClient;
     private final JenkinsConfigRepository  jenkinsConfigRepository;
     private final JobRepository            jobRepository;
-    private final BuildRepository          buildRepository;
-    private final BuildEventPublisher      buildEventPublisher;
+    private final BuildRepository             buildRepository;
+    private final BuildEventPublisher         buildEventPublisher;
+    private final TestResultIngestionService  testResultIngestionService;
 
     @Override
     @Scheduled(fixedDelayString = "${app.jenkins.poll-delay-ms:300000}")
@@ -118,6 +120,8 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
                 saved.getId(), job.getId(), config.getOrgId(),
                 job.getJenkinsJobName(), saved.getBuildNumber(),
                 status, saved.getDurationMs(), saved.getStartedAt(), saved.getFinishedAt()));
+
+        testResultIngestionService.ingestForBuild(config, job, saved);
     }
 
     private BuildStatus toStatus(JenkinsBuildInfo info) {
