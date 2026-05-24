@@ -85,10 +85,11 @@ start_postgres() {
     return
   fi
   info "Starting Postgres container…"
-  docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d postgres
+  # Export a default JWT_SECRET so docker-compose doesn't warn about the backend service variable
+  JWT_SECRET="${JWT_SECRET:-dev-placeholder}" docker-compose -f "$SCRIPT_DIR/docker-compose.yml" up -d postgres
   info "Waiting for Postgres to be healthy…"
   local i=0
-  until docker inspect --format='{{.State.Health.Status}}' qalytix-postgres 2>/dev/null | grep -q healthy; do
+  until [[ "$(docker inspect --format='{{.State.Health.Status}}' qalytix-postgres 2>/dev/null)" == "healthy" ]]; do
     if (( i >= 60 )); then
       error "Postgres did not become healthy in time."
       exit 1
@@ -101,7 +102,7 @@ start_postgres() {
 stop_postgres() {
   if docker ps --format '{{.Names}}' | grep -q '^qalytix-postgres$'; then
     info "Stopping Postgres container…"
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" stop postgres
+    JWT_SECRET="${JWT_SECRET:-dev-placeholder}" docker-compose -f "$SCRIPT_DIR/docker-compose.yml" stop postgres
     success "Postgres stopped."
   else
     warn "Postgres container is not running."
@@ -115,7 +116,7 @@ start_backend() {
     warn "Backend is already running (pid $(cat "$BACKEND_PID_FILE"))."
     return
   fi
-  info "Starting backend (Spring Boot) on :8080…"
+  info "Starting backend (Spring Boot) on :8081…"
   mkdir -p "$LOGS_DIR"
   (
     cd "$BACKEND_DIR"
@@ -126,8 +127,8 @@ start_backend() {
   ) &
   echo $! > "$BACKEND_PID_FILE"
   info "Waiting for backend to be ready…"
-  if wait_for_port 8080 "Backend"; then
-    success "Backend ready — http://localhost:8080  (log: $BACKEND_LOG)"
+  if wait_for_port 8081 "Backend"; then
+    success "Backend ready — http://localhost:8081  (log: $BACKEND_LOG)"
   else
     error "Backend failed to start. Check $BACKEND_LOG"
     rm -f "$BACKEND_PID_FILE"
@@ -194,8 +195,8 @@ cmd_start() {
   echo ""
   success "All services running."
   echo -e "  Frontend  →  ${CYAN}http://localhost:3000${RESET}"
-  echo -e "  Backend   →  ${CYAN}http://localhost:8080${RESET}"
-  echo -e "  Swagger   →  ${CYAN}http://localhost:8080/swagger-ui/index.html${RESET}"
+  echo -e "  Backend   →  ${CYAN}http://localhost:8081${RESET}"
+  echo -e "  Swagger   →  ${CYAN}http://localhost:8081/swagger-ui/index.html${RESET}"
   echo -e "  Logs dir  →  ${CYAN}$LOGS_DIR${RESET}"
 }
 
@@ -217,7 +218,7 @@ cmd_status() {
 
   # Backend
   if is_running "$BACKEND_PID_FILE"; then
-    echo -e "  Backend   ${GREEN}running${RESET}  (pid $(cat "$BACKEND_PID_FILE"))  :8080"
+    echo -e "  Backend   ${GREEN}running${RESET}  (pid $(cat "$BACKEND_PID_FILE"))  :8081"
   else
     echo -e "  Backend   ${RED}stopped${RESET}"
   fi
