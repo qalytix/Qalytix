@@ -1,5 +1,13 @@
+# Linux / macOS
 ./dev.sh start    # starts postgres → backend → frontend, waits for each to be ready
 ./dev.sh stop     # graceful shutdown in reverse order
 ./dev.sh restart  # stop + start
 ./dev.sh status   # shows running/stopped for all three services
 ./dev.sh logs     # tails backend.log + ui.log together
+
+# Windows (run from project root in Command Prompt)
+dev.bat start     # starts postgres → backend → frontend
+dev.bat stop      # graceful shutdown in reverse order
+dev.bat restart   # stop + start
+dev.bat status    # shows running/stopped for all three services
+dev.bat logs      # tails backend.log + ui.log (PowerShell Get-Content -Wait)
