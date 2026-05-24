@@ -316,24 +316,24 @@ qalytix-ui/src/
 
 ---
 
-### Phase 3 — Live Dashboard & Real-time Monitoring
+### Phase 3 — Live Dashboard & Real-time Monitoring ✅
 **Goal:** Real-time visibility into active builds using WebSocket, per org.
 
 #### Backend
-- [ ] WebSocket config (STOMP over SockJS, `/ws` endpoint)
-- [ ] Auth for WebSocket connections: validate JWT on CONNECT frame
-- [ ] Org-scoped STOMP topics: `/topic/org/{orgId}/builds`
-- [ ] `BuildEventPublisher`: broadcasts build status change events
-- [ ] Hook ingestion events into publisher
-- [ ] `DashboardController`: summary stats (active builds, today's totals, recent failures)
+- [x] WebSocket config (STOMP over SockJS, `/ws` endpoint)
+- [x] Auth for WebSocket connections: validate JWT on CONNECT frame
+- [x] Org-scoped STOMP topics: `/topic/org/{orgId}/builds`
+- [x] `BuildEventPublisher`: broadcasts build status change events
+- [x] Hook ingestion events into publisher
+- [x] `DashboardController`: summary stats (active builds, today's totals, recent failures)
 
 #### Frontend
-- [ ] `useWebSocket` hook — connects with JWT, subscribes to org topic
-- [ ] Live dashboard page:
+- [x] `useWebSocket` hook — connects with JWT, subscribes to org topic
+- [x] Live dashboard page:
   - Active/running builds widget (live updates)
   - Today's pass/fail/total counters
   - Recent build activity feed
-- [ ] Build status badge component (running, passed, failed, unstable, aborted)
+- [x] Build status badge component (running, passed, failed, unstable, aborted)
 
 **Deliverable:** Dashboard live-updates as Jenkins builds run — no page refresh needed.
 
