@@ -12,6 +12,7 @@ import com.qalytix.integration.jenkins.JenkinsClient;
 import com.qalytix.integration.jenkins.JenkinsTestReportResponse;
 import com.qalytix.integration.junit.JUnitXmlParser;
 import com.qalytix.integration.junit.ParsedTestCase;
+import com.qalytix.integration.testng.TestNGXmlParser;
 import com.qalytix.repository.JobRepository;
 import com.qalytix.repository.TestResultRepository;
 import com.qalytix.service.TestResultIngestionService;
@@ -31,6 +32,7 @@ public class TestResultIngestionServiceImpl implements TestResultIngestionServic
     private final JenkinsClient        jenkinsClient;
     private final JUnitXmlParser       jUnitXmlParser;
     private final CucumberJsonParser   cucumberJsonParser;
+    private final TestNGXmlParser      testNGXmlParser;
     private final TestResultRepository testResultRepository;
     private final JobRepository        jobRepository;
 
@@ -50,6 +52,11 @@ public class TestResultIngestionServiceImpl implements TestResultIngestionServic
         // Fall back to Cucumber JSON artifacts
         if (cases.isEmpty()) {
             cases = fetchViaCucumberJson(config, job, build);
+        }
+
+        // Fall back to native TestNG XML (testng-results.xml)
+        if (cases.isEmpty()) {
+            cases = fetchViaTestNGXml(config, job, build);
         }
 
         if (cases.isEmpty()) {
@@ -135,6 +142,24 @@ public class TestResultIngestionServiceImpl implements TestResultIngestionServic
         String lower = path.toLowerCase();
         return lower.contains("surefire") || lower.contains("test-result")
                 || lower.contains("test_result") || lower.contains("reports");
+    }
+
+    private List<ParsedTestCase> fetchViaTestNGXml(JenkinsConfig config, Job job, Build build) {
+        List<JenkinsArtifactInfo> artifacts = jenkinsClient.fetchArtifacts(
+                config, job.getJenkinsJobName(), build.getBuildNumber());
+
+        List<ParsedTestCase> all = new ArrayList<>();
+        for (JenkinsArtifactInfo artifact : artifacts) {
+            if (!artifact.fileName().endsWith(".xml")) continue;
+            String xml = jenkinsClient.downloadArtifact(
+                    config, job.getJenkinsJobName(), build.getBuildNumber(), artifact.relativePath());
+            if (xml != null && testNGXmlParser.isTestNGXml(xml)) {
+                log.debug("Parsing TestNG XML artifact {} for build #{} of job [{}]",
+                        artifact.relativePath(), build.getBuildNumber(), job.getJenkinsJobName());
+                all.addAll(testNGXmlParser.parse(xml));
+            }
+        }
+        return all;
     }
 
     private List<ParsedTestCase> fetchViaCucumberJson(JenkinsConfig config, Job job, Build build) {

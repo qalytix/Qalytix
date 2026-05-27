@@ -46,7 +46,7 @@ class DashboardServiceImplTest {
         when(buildRepository.countByOrgIdAndStatusAndStartedAtAfter(eq(ORG_ID), eq(BuildStatus.FAILURE), any())).thenReturn(3L);
         when(buildRepository.findRecentByOrgId(eq(ORG_ID), any(Pageable.class))).thenReturn(List.of());
 
-        DashboardStatsResponse stats = service.getStats();
+        DashboardStatsResponse stats = service.getStats(false);
 
         assertThat(stats.activeBuilds()).isEqualTo(2L);
         assertThat(stats.todayTotal()).isEqualTo(15L);
@@ -68,7 +68,7 @@ class DashboardServiceImplTest {
         when(buildRepository.findRecentByOrgId(eq(ORG_ID), any(Pageable.class))).thenReturn(List.of(build));
         when(jobRepository.findById(5L)).thenReturn(Optional.of(job));
 
-        DashboardStatsResponse stats = service.getStats();
+        DashboardStatsResponse stats = service.getStats(false);
 
         assertThat(stats.recentBuilds()).hasSize(1);
         assertThat(stats.recentBuilds().get(0).jobName()).isEqualTo("My Job");
@@ -89,7 +89,7 @@ class DashboardServiceImplTest {
         when(buildRepository.findRecentByOrgId(eq(ORG_ID), any(Pageable.class))).thenReturn(List.of(build));
         when(jobRepository.findById(5L)).thenReturn(Optional.of(job));
 
-        DashboardStatsResponse stats = service.getStats();
+        DashboardStatsResponse stats = service.getStats(false);
 
         assertThat(stats.recentBuilds().get(0).jobName()).isEqualTo("raw-job");
     }
