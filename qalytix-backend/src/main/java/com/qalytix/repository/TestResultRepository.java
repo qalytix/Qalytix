@@ -102,9 +102,9 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
                    COUNT(tr.id) AS totalTests,
                    j.last_build_status AS latestBuildStatus,
                    SUM(CASE WHEN (b.started_at AT TIME ZONE 'UTC')::date = CURRENT_DATE - INTERVAL '1 day'
-                            AND tr.status = 'PASSED' THEN 1 ELSE 0 END) AS yesterdayPassed,
+                            AND tr.id IS NOT NULL THEN 1 ELSE 0 END) AS yesterdayTotal,
                    SUM(CASE WHEN (b.started_at AT TIME ZONE 'UTC')::date = CURRENT_DATE
-                            AND tr.status = 'PASSED' THEN 1 ELSE 0 END) AS todayPassed,
+                            AND tr.id IS NOT NULL THEN 1 ELSE 0 END) AS todayTotal,
                    SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END) AS passedTotal,
                    SUM(CASE WHEN tr.status = 'FAILED' THEN 1 ELSE 0 END) AS failedTotal,
                    (SELECT COUNT(*)

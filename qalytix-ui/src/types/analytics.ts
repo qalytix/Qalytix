@@ -31,8 +31,8 @@ export interface JobStat {
   jobName: string;
   totalTests: number;
   latestBuildStatus: string;
-  yesterdayPassed: number;
-  todayPassed: number;
+  yesterdayTotal: number;
+  todayTotal: number;
   trend: string;
   passPercentage: number;
   failPercentage: number;

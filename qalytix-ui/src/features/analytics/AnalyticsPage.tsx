@@ -172,8 +172,8 @@ function JobStatsTable({ rows }: { rows: JobStat[] }) {
                 <th className="pb-3 font-medium">Job</th>
                 <th className="pb-3 font-medium text-right">Tests</th>
                 <th className="pb-3 font-medium">Latest Build</th>
-                <th className="pb-3 font-medium text-right">Yesterday ✓</th>
-                <th className="pb-3 font-medium text-right">Today ✓</th>
+                <th className="pb-3 font-medium text-right">Yesterday</th>
+                <th className="pb-3 font-medium text-right">Today</th>
                 <th className="pb-3 font-medium">Trend</th>
                 <th className="pb-3 font-medium text-right">Pass %</th>
                 <th className="pb-3 font-medium text-right">Fail %</th>
@@ -200,8 +200,8 @@ function JobStatsTable({ rows }: { rows: JobStat[] }) {
                       </span>
                     </td>
                     <td className="py-3"><BuildBadge status={r.latestBuildStatus ?? 'UNKNOWN'} /></td>
-                    <td className="py-3 text-right text-slate-600">{r.yesterdayPassed}</td>
-                    <td className="py-3 text-right text-slate-600">{r.todayPassed}</td>
+                    <td className="py-3 text-right text-slate-600">{r.yesterdayTotal}</td>
+                    <td className="py-3 text-right text-slate-600">{r.todayTotal}</td>
                     <td className="py-3"><TrendBadge trend={r.trend} /></td>
                     <td className={`py-3 text-right font-medium ${noResults ? 'text-slate-400' : r.passPercentage >= 90 ? 'text-green-600' : r.passPercentage >= 70 ? 'text-amber-600' : 'text-red-500'}`}>
                       {noResults ? '—' : `${r.passPercentage}%`}
