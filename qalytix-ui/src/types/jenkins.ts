@@ -38,6 +38,8 @@ export interface Job {
   lastBuildStatus: BuildStatus | null
   lastBuildAt: string | null
   createdAt: string
+  isTestJob: boolean
+  viewNames: string[]
 }
 
 export interface Build {

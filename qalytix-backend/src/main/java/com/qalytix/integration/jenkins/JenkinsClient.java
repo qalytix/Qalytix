@@ -10,7 +10,9 @@ import org.springframework.web.client.RestClientException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -87,6 +89,34 @@ public class JenkinsClient {
         } catch (RestClientException e) {
             log.debug("No test report available for {}/{}: {}", jobName, buildNumber, e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Fetch all Jenkins views and return a map of jobName → list of view names.
+     * The "All" view (Jenkins default) is always included for every job.
+     */
+    public Map<String, List<String>> fetchViewsByJob(JenkinsConfig config) {
+        try {
+            JenkinsViewsResponse response = client(config)
+                    .get()
+                    .uri("/api/json?tree=views[name,jobs[name]]")
+                    .retrieve()
+                    .body(JenkinsViewsResponse.class);
+
+            Map<String, List<String>> result = new HashMap<>();
+            if (response == null || response.views() == null) return result;
+
+            for (JenkinsViewInfo view : response.views()) {
+                if (view.jobs() == null) continue;
+                for (JenkinsViewInfo.JenkinsViewJobRef jobRef : view.jobs()) {
+                    result.computeIfAbsent(jobRef.name(), k -> new java.util.ArrayList<>()).add(view.name());
+                }
+            }
+            return result;
+        } catch (RestClientException e) {
+            log.warn("Failed to fetch views from Jenkins [{}]: {}", config.getUrl(), e.getMessage());
+            return Map.of();
         }
     }
 

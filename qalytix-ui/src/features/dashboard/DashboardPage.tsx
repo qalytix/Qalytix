@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Activity, CheckCircle, XCircle, Zap } from 'lucide-react'
+import { Activity, CheckCircle, XCircle, Zap, FlaskConical } from 'lucide-react'
 import { getDashboardStats } from '../../api/dashboard'
 import { useAuthStore } from '../../stores/authStore'
 import { useWebSocket } from '../../hooks/useWebSocket'
@@ -33,20 +33,24 @@ function formatRelative(ts: string | null): string {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats]   = useState<DashboardStats | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [stats, setStats]         = useState<DashboardStats | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [testJobsOnly, setTestJobsOnly] = useState(false)
   const org = useAuthStore((s) => s.org)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (testOnly: boolean) => {
     try {
-      const { data } = await getDashboardStats()
+      const { data } = await getDashboardStats(testOnly)
       setStats(data.data)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    setLoading(true)
+    load(testJobsOnly)
+  }, [load, testJobsOnly])
 
   const handleBuildEvent = useCallback((event: BuildEvent) => {
     setStats(prev => {
@@ -58,13 +62,11 @@ export default function DashboardPage() {
         durationMs: e.durationMs, startedAt: e.startedAt,
       })
 
-      // update or prepend in the recent list
       const existing = prev.recentBuilds.find(b => b.buildId === event.buildId)
       const recentBuilds = existing
         ? prev.recentBuilds.map(b => b.buildId === event.buildId ? toRecent(event) : b)
         : [toRecent(event), ...prev.recentBuilds].slice(0, 10)
 
-      // recount active builds from updated list
       const activeBuilds = recentBuilds.filter(b => b.status === 'IN_PROGRESS').length
 
       return { ...prev, recentBuilds, activeBuilds }
@@ -79,9 +81,26 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Live build activity for your organization</p>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Live build activity for your organization</p>
+        </div>
+
+        {/* Test jobs only toggle */}
+        <button
+          onClick={() => setTestJobsOnly(v => !v)}
+          className={[
+            'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+            testJobsOnly
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50',
+          ].join(' ')}
+          title={testJobsOnly ? 'Showing test jobs only — click to show all' : 'Click to show test jobs only'}
+        >
+          <FlaskConical className="w-3.5 h-3.5" />
+          {testJobsOnly ? 'Test jobs only' : 'All jobs'}
+        </button>
       </div>
 
       {/* Stat cards */}
@@ -95,12 +114,16 @@ export default function DashboardPage() {
       {/* Recent activity */}
       <div className="bg-white rounded-xl border border-slate-200">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">Recent builds</h2>
+          <h2 className="text-sm font-semibold text-slate-900">
+            Recent builds{testJobsOnly && <span className="ml-2 text-emerald-600 font-normal text-xs">(test jobs)</span>}
+          </h2>
           <span className="text-xs text-slate-400">Live</span>
         </div>
 
         {s.recentBuilds.length === 0 ? (
-          <div className="p-12 text-center text-sm text-slate-500">No builds yet.</div>
+          <div className="p-12 text-center text-sm text-slate-500">
+            {testJobsOnly ? 'No test job builds found. Run a job with test results first.' : 'No builds yet.'}
+          </div>
         ) : (
           <div className="divide-y divide-slate-100">
             {s.recentBuilds.map(build => (

@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Backend
+
+**Added**
+- `V4__add_job_test_flag_and_views.sql` migration: adds `is_test_job BOOLEAN DEFAULT FALSE` and `view_names TEXT DEFAULT '|All|'` columns to `jobs`; index `idx_jobs_org_is_test_job` for fast filtering
+- `Job` entity: `isTestJob` and `viewNames` (pipe-delimited) fields
+- `JenkinsClient.fetchViewsByJob()`: single API call to `GET /api/json?tree=views[name,jobs[name]]` returns a `Map<jobName, List<viewName>>`; `JenkinsViewInfo` and `JenkinsViewsResponse` record models
+- `JenkinsIngestionServiceImpl.syncConfig()`: fetches views on each sync and stores them on every job as pipe-delimited `viewNames` (e.g. `|All|Backend|Nightly|`)
+- `TestResultIngestionServiceImpl`: marks a job as `isTestJob = true` via `jobRepository.markAsTestJob()` the first time test results are successfully ingested
+- `TestResultRepository.findJobStats()`: filters to `j.is_test_job = TRUE` so only test jobs appear in analytics
+- `JobRepository`: `markAsTestJob()` (`@Modifying`), `findAllByOrgIdAndIsTestJob()`, `findAllByOrgIdAndView()`, `findAllByOrgIdAndViewAndIsTestJob()`
+- `JobResponse`: `isTestJob` and `viewNames` (List<String>) fields
+- `JobService.listForCurrentOrg(String view)` — optional view filter; `getDistinctViews()` — returns sorted distinct view names for the org
+- `JobController`: `GET /api/v1/jobs?view=<name>` filter param; `GET /api/v1/jobs/views` endpoint returning available Jenkins view names
+- `DashboardService.getStats(boolean testJobsOnly)` — when `true`, stats and recent builds are scoped to jobs with `isTestJob = true`
+- `DashboardController`: `GET /api/v1/dashboard/stats?testJobsOnly=false` optional param
+- `BuildRepository`: four `testJobsOnly` query variants (`countByOrgIdAndStatusAndTestJobs`, `countByOrgIdAndStartedAtAfterAndTestJobs`, `countByOrgIdAndStatusAndStartedAtAfterAndTestJobs`, `findRecentByOrgIdTestJobsOnly`) using JPQL subquery on `Job.isTestJob`
+
+### Frontend
+
+**Added**
+- `Job` type: `isTestJob: boolean` and `viewNames: string[]` fields
+- `getJobViews()` API function — `GET /jobs/views`
+- `getJobs(view?)` — passes `?view=<name>` when a non-All view is selected
+- `getDashboardStats(testJobsOnly?)` — passes `?testJobsOnly=true` when toggled
+- **Jobs page** — Jenkins view selector: pill buttons (All + each view name) fetched from `/jobs/views`; re-fetches jobs on view change; "Tests" badge (flask icon) on jobs with `isTestJob = true`
+- **Dashboard page** — "All jobs / Test jobs only" toggle button; re-fetches stats on toggle; "Recent builds" heading shows `(test jobs)` suffix when filtered; empty-state message when no test-job builds exist
+
 ---
 
 ## [0.4.1] - 2026-05-24

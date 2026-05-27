@@ -27,8 +27,11 @@ export const testJenkinsConnection = (id: number) =>
 export const syncJenkins = (id: number) =>
   api.post<ApiResponse<void>>(`/jenkins/${id}/sync`)
 
-export const getJobs = () =>
-  api.get<ApiResponse<Job[]>>('/jobs')
+export const getJobs = (view?: string) =>
+  api.get<ApiResponse<Job[]>>('/jobs', { params: view && view !== 'All' ? { view } : undefined })
+
+export const getJobViews = () =>
+  api.get<ApiResponse<string[]>>('/jobs/views')
 
 export const getJob = (id: number) =>
   api.get<ApiResponse<Job>>(`/jobs/${id}`)

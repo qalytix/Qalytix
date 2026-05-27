@@ -32,4 +32,38 @@ public interface BuildRepository extends JpaRepository<Build, Long> {
             ORDER BY b.startedAt DESC
             """)
     List<Build> findRecentByOrgId(@Param("orgId") Long orgId, Pageable pageable);
+
+    // ── test-jobs-only variants ───────────────────────────────────────────────
+
+    @Query("""
+            SELECT COUNT(b) FROM Build b
+            WHERE b.orgId = :orgId AND b.status = :status
+              AND b.jobId IN (SELECT j.id FROM Job j WHERE j.orgId = :orgId AND j.isTestJob = true)
+            """)
+    long countByOrgIdAndStatusAndTestJobs(
+            @Param("orgId") Long orgId, @Param("status") BuildStatus status);
+
+    @Query("""
+            SELECT COUNT(b) FROM Build b
+            WHERE b.orgId = :orgId AND b.startedAt > :since
+              AND b.jobId IN (SELECT j.id FROM Job j WHERE j.orgId = :orgId AND j.isTestJob = true)
+            """)
+    long countByOrgIdAndStartedAtAfterAndTestJobs(
+            @Param("orgId") Long orgId, @Param("since") Instant since);
+
+    @Query("""
+            SELECT COUNT(b) FROM Build b
+            WHERE b.orgId = :orgId AND b.status = :status AND b.startedAt > :since
+              AND b.jobId IN (SELECT j.id FROM Job j WHERE j.orgId = :orgId AND j.isTestJob = true)
+            """)
+    long countByOrgIdAndStatusAndStartedAtAfterAndTestJobs(
+            @Param("orgId") Long orgId, @Param("status") BuildStatus status, @Param("since") Instant since);
+
+    @Query("""
+            SELECT b FROM Build b
+            WHERE b.orgId = :orgId
+              AND b.jobId IN (SELECT j.id FROM Job j WHERE j.orgId = :orgId AND j.isTestJob = true)
+            ORDER BY b.startedAt DESC
+            """)
+    List<Build> findRecentByOrgIdTestJobsOnly(@Param("orgId") Long orgId, Pageable pageable);
 }

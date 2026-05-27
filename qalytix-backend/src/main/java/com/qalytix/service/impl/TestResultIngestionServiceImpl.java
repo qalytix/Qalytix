@@ -12,6 +12,7 @@ import com.qalytix.integration.jenkins.JenkinsClient;
 import com.qalytix.integration.jenkins.JenkinsTestReportResponse;
 import com.qalytix.integration.junit.JUnitXmlParser;
 import com.qalytix.integration.junit.ParsedTestCase;
+import com.qalytix.repository.JobRepository;
 import com.qalytix.repository.TestResultRepository;
 import com.qalytix.service.TestResultIngestionService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class TestResultIngestionServiceImpl implements TestResultIngestionServic
     private final JUnitXmlParser       jUnitXmlParser;
     private final CucumberJsonParser   cucumberJsonParser;
     private final TestResultRepository testResultRepository;
+    private final JobRepository        jobRepository;
 
     @Override
     @Transactional
@@ -70,6 +72,12 @@ public class TestResultIngestionServiceImpl implements TestResultIngestionServic
                 .toList();
 
         testResultRepository.saveAll(results);
+
+        // Mark this job as a test job on first successful ingestion
+        if (!job.isTestJob()) {
+            jobRepository.markAsTestJob(job.getId());
+        }
+
         log.info("Ingested {} test results for build #{} of job [{}]",
                 results.size(), build.getBuildNumber(), job.getJenkinsJobName());
     }

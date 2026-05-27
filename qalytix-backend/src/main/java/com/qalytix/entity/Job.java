@@ -32,6 +32,17 @@ public class Job {
 
     private Instant lastBuildAt;
 
+    /** True once at least one test result has been ingested for this job. */
+    @Column(name = "is_test_job", nullable = false)
+    private boolean isTestJob = false;
+
+    /**
+     * Pipe-delimited Jenkins view names this job belongs to, e.g. "|All|Backend|".
+     * Always contains "|All|" (Jenkins' default view).
+     */
+    @Column(name = "view_names", nullable = false)
+    private String viewNames = "|All|";
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

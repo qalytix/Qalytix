@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -55,8 +56,11 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
         log.debug("Syncing Jenkins config [{}] for org {}", config.getName(), config.getOrgId());
         List<JenkinsJobInfo> remoteJobs = jenkinsClient.fetchJobs(config);
 
+        // Fetch view membership once per config to avoid N+1 calls
+        Map<String, List<String>> viewsByJob = jenkinsClient.fetchViewsByJob(config);
+
         for (JenkinsJobInfo jobInfo : remoteJobs) {
-            Job job = upsertJob(config, jobInfo);
+            Job job = upsertJob(config, jobInfo, viewsByJob);
             if (jobInfo.lastBuild() != null) {
                 upsertBuild(config, job, jobInfo.lastBuild());
             }
@@ -66,12 +70,14 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
         jenkinsConfigRepository.save(config);
     }
 
-    private Job upsertJob(JenkinsConfig config, JenkinsJobInfo info) {
+    private Job upsertJob(JenkinsConfig config, JenkinsJobInfo info, Map<String, List<String>> viewsByJob) {
+        String viewNames = buildViewNames(info.name(), viewsByJob);
         return jobRepository
                 .findByJenkinsConfigIdAndJenkinsJobName(config.getId(), info.name())
                 .map(existing -> {
                     existing.setDisplayName(info.displayName());
                     existing.setUrl(info.url());
+                    existing.setViewNames(viewNames);
                     if (info.lastBuild() != null) {
                         existing.setLastBuildNumber(info.lastBuild().number());
                         existing.setLastBuildStatus(toStatus(info.lastBuild()));
@@ -85,7 +91,8 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
                             .jenkinsConfigId(config.getId())
                             .jenkinsJobName(info.name())
                             .displayName(info.displayName())
-                            .url(info.url());
+                            .url(info.url())
+                            .viewNames(viewNames);
                     if (info.lastBuild() != null) {
                         builder.lastBuildNumber(info.lastBuild().number())
                                .lastBuildStatus(toStatus(info.lastBuild()))
@@ -93,6 +100,20 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
                     }
                     return jobRepository.save(builder.build());
                 });
+    }
+
+    /**
+     * Build a pipe-delimited string of view names for the given job, e.g. "|All|Backend|".
+     * Falls back to "|All|" if the job doesn't appear in any view mapping.
+     */
+    private String buildViewNames(String jobName, Map<String, List<String>> viewsByJob) {
+        List<String> views = viewsByJob.getOrDefault(jobName, List.of());
+        if (views.isEmpty()) return "|All|";
+        StringBuilder sb = new StringBuilder("|");
+        for (String v : views) sb.append(v).append("|");
+        // Ensure "All" is always present
+        if (!sb.toString().contains("|All|")) sb.insert(1, "All|");
+        return sb.toString();
     }
 
     private void upsertBuild(JenkinsConfig config, Job job, JenkinsBuildInfo info) {

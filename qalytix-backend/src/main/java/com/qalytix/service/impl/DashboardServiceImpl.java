@@ -23,27 +23,45 @@ public class DashboardServiceImpl implements DashboardService {
     private final JobRepository   jobRepository;
 
     @Override
-    public DashboardStatsResponse getStats() {
+    public DashboardStatsResponse getStats(boolean testJobsOnly) {
         Long orgId     = TenantContext.getOrgId();
         Instant todayStart = Instant.now().truncatedTo(ChronoUnit.DAYS);
 
-        long activeBuilds  = buildRepository.countByOrgIdAndStatus(orgId, BuildStatus.IN_PROGRESS);
-        long todayTotal    = buildRepository.countByOrgIdAndStartedAtAfter(orgId, todayStart);
-        long todaySuccess  = buildRepository.countByOrgIdAndStatusAndStartedAtAfter(orgId, BuildStatus.SUCCESS, todayStart);
-        long todayFailure  = buildRepository.countByOrgIdAndStatusAndStartedAtAfter(orgId, BuildStatus.FAILURE, todayStart);
+        long activeBuilds, todayTotal, todaySuccess, todayFailure;
+        List<RecentBuild> recentBuilds;
 
-        List<RecentBuild> recentBuilds = buildRepository
-                .findRecentByOrgId(orgId, PageRequest.of(0, 10))
-                .stream()
-                .map(b -> {
-                    String jobName = jobRepository.findById(b.getJobId())
-                            .map(j -> j.getDisplayName() != null ? j.getDisplayName() : j.getJenkinsJobName())
-                            .orElse("Unknown");
-                    return new RecentBuild(b.getId(), b.getJobId(), jobName,
-                            b.getBuildNumber(), b.getStatus(), b.getDurationMs(), b.getStartedAt());
-                })
-                .toList();
+        if (testJobsOnly) {
+            activeBuilds = buildRepository.countByOrgIdAndStatusAndTestJobs(orgId, BuildStatus.IN_PROGRESS);
+            todayTotal   = buildRepository.countByOrgIdAndStartedAtAfterAndTestJobs(orgId, todayStart);
+            todaySuccess = buildRepository.countByOrgIdAndStatusAndStartedAtAfterAndTestJobs(orgId, BuildStatus.SUCCESS, todayStart);
+            todayFailure = buildRepository.countByOrgIdAndStatusAndStartedAtAfterAndTestJobs(orgId, BuildStatus.FAILURE, todayStart);
+            recentBuilds = buildRepository
+                    .findRecentByOrgIdTestJobsOnly(orgId, PageRequest.of(0, 10))
+                    .stream()
+                    .map(b -> toRecentBuild(b.getId(), b.getJobId(), b.getBuildNumber(),
+                            b.getStatus(), b.getDurationMs(), b.getStartedAt()))
+                    .toList();
+        } else {
+            activeBuilds = buildRepository.countByOrgIdAndStatus(orgId, BuildStatus.IN_PROGRESS);
+            todayTotal   = buildRepository.countByOrgIdAndStartedAtAfter(orgId, todayStart);
+            todaySuccess = buildRepository.countByOrgIdAndStatusAndStartedAtAfter(orgId, BuildStatus.SUCCESS, todayStart);
+            todayFailure = buildRepository.countByOrgIdAndStatusAndStartedAtAfter(orgId, BuildStatus.FAILURE, todayStart);
+            recentBuilds = buildRepository
+                    .findRecentByOrgId(orgId, PageRequest.of(0, 10))
+                    .stream()
+                    .map(b -> toRecentBuild(b.getId(), b.getJobId(), b.getBuildNumber(),
+                            b.getStatus(), b.getDurationMs(), b.getStartedAt()))
+                    .toList();
+        }
 
         return new DashboardStatsResponse(activeBuilds, todayTotal, todaySuccess, todayFailure, recentBuilds);
+    }
+
+    private RecentBuild toRecentBuild(Long id, Long jobId, int buildNumber,
+                                      BuildStatus status, Long durationMs, Instant startedAt) {
+        String jobName = jobRepository.findById(jobId)
+                .map(j -> j.getDisplayName() != null ? j.getDisplayName() : j.getJenkinsJobName())
+                .orElse("Unknown");
+        return new RecentBuild(id, jobId, jobName, buildNumber, status, durationMs, startedAt);
     }
 }

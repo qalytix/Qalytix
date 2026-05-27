@@ -120,6 +120,7 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
             LEFT JOIN builds b ON b.job_id = j.id AND b.org_id = :orgId AND b.started_at >= :since
             LEFT JOIN test_results tr ON tr.build_id = b.id AND tr.org_id = :orgId
             WHERE j.org_id = :orgId
+              AND j.is_test_job = TRUE
               AND EXISTS (
                   SELECT 1 FROM builds b3
                   WHERE b3.job_id = j.id AND b3.org_id = :orgId AND b3.started_at >= :since
