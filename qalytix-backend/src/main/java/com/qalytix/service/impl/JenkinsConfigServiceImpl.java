@@ -54,12 +54,12 @@ public class JenkinsConfigServiceImpl implements JenkinsConfigService {
     @Transactional
     public JenkinsConfigResponse update(Long id, UpdateJenkinsConfigRequest req) {
         JenkinsConfig config = findOwned(id);
-        if (req.name()         != null) config.setName(req.name());
-        if (req.url()          != null) config.setUrl(req.url().stripTrailing().replaceAll("/$", ""));
-        if (req.username()     != null) config.setUsername(req.username());
-        if (req.apiToken()     != null) config.setApiToken(req.apiToken());
-        if (req.pollInterval() != null) config.setPollInterval(req.pollInterval());
-        if (req.active()       != null) config.setActive(req.active());
+        if (req.name()         != null && !req.name().isBlank())         config.setName(req.name());
+        if (req.url()          != null && !req.url().isBlank())          config.setUrl(req.url().stripTrailing().replaceAll("/$", ""));
+        if (req.username()     != null && !req.username().isBlank())     config.setUsername(req.username());
+        if (req.apiToken()     != null && !req.apiToken().isBlank())     config.setApiToken(req.apiToken());
+        if (req.pollInterval() != null && !req.pollInterval().isBlank()) config.setPollInterval(req.pollInterval());
+        if (req.active()       != null)                                  config.setActive(req.active());
         return toResponse(jenkinsConfigRepository.save(config));
     }
 

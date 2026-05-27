@@ -49,7 +49,10 @@ export default function JenkinsPage() {
     setError('')
     try {
       if (editing) {
-        const { data } = await updateJenkinsConfig(editing.id, form)
+        // Omit apiToken entirely when left blank — backend keeps the existing token
+        const { apiToken, ...rest } = form
+        const payload = apiToken.trim() ? { ...rest, apiToken } : rest
+        const { data } = await updateJenkinsConfig(editing.id, payload)
         setConfigs(cs => cs.map(c => c.id === editing.id ? data.data : c))
       } else {
         const { data } = await createJenkinsConfig(form as CreateJenkinsConfigPayload)
