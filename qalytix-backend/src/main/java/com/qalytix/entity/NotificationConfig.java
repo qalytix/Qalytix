@@ -46,7 +46,7 @@ public class NotificationConfig {
     @Builder.Default
     private boolean onFlakyThreshold = false;
 
-    @Column(name = "flaky_score_threshold", nullable = false)
+    @Column(name = "flaky_score_threshold", nullable = false, columnDefinition = "numeric(5,3)")
     @Builder.Default
     private double flakyScoreThreshold = 0.5;
 
