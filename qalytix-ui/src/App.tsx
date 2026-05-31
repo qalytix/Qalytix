@@ -12,6 +12,9 @@ import MembersPage from './features/members/MembersPage'
 import NotificationsPage from './features/notifications/NotificationsPage'
 import ReportsPage from './features/reports/ReportsPage'
 import BillingPage from './features/billing/BillingPage'
+import PlanComparePage from './features/billing/PlanComparePage'
+import CheckoutSuccessPage from './features/billing/CheckoutSuccessPage'
+import CheckoutCancelPage from './features/billing/CheckoutCancelPage'
 
 const router = createBrowserRouter([
   { path: '/login',    element: <LoginPage /> },
@@ -32,6 +35,9 @@ const router = createBrowserRouter([
           { path: 'notifications',            element: <NotificationsPage /> },
           { path: 'reports',                  element: <ReportsPage /> },
           { path: 'billing',                  element: <BillingPage /> },
+          { path: 'billing/upgrade',          element: <PlanComparePage /> },
+          { path: 'billing/success',          element: <CheckoutSuccessPage /> },
+          { path: 'billing/cancel',           element: <CheckoutCancelPage /> },
         ],
       },
     ],

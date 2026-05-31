@@ -4,7 +4,7 @@ import com.qalytix.entity.enums.Plan;
 import com.qalytix.exception.BadRequestException;
 import com.qalytix.repository.JenkinsConfigRepository;
 import com.qalytix.repository.OrganizationMemberRepository;
-import com.qalytix.repository.OrganizationRepository;
+import com.qalytix.repository.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,17 +12,16 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PlanGuard {
 
-    private final OrganizationRepository    orgRepository;
-    private final JenkinsConfigRepository   jenkinsConfigRepository;
-    private final OrganizationMemberRepository memberRepository;
+    private final SubscriptionRepository        subscriptionRepository;
+    private final JenkinsConfigRepository       jenkinsConfigRepository;
+    private final OrganizationMemberRepository  memberRepository;
+
+    // ── limit checks ─────────────────────────────────────────────────────────
 
     public void checkJenkinsConnectionLimit(Long orgId) {
-        Plan plan = orgRepository.findById(orgId)
-                .orElseThrow(() -> new BadRequestException("Organization not found"))
-                .getPlan();
-
+        Plan plan = getPlan(orgId);
         long current = jenkinsConfigRepository.countByOrgIdAndActiveTrue(orgId);
-        int limit = jenkinsLimit(plan);
+        int  limit   = jenkinsLimit(plan);
 
         if (limit != -1 && current >= limit) {
             throw new BadRequestException(
@@ -32,12 +31,9 @@ public class PlanGuard {
     }
 
     public void checkMemberLimit(Long orgId) {
-        Plan plan = orgRepository.findById(orgId)
-                .orElseThrow(() -> new BadRequestException("Organization not found"))
-                .getPlan();
-
+        Plan plan = getPlan(orgId);
         long current = memberRepository.countByOrganizationId(orgId);
-        int limit = memberLimit(plan);
+        int  limit   = memberLimit(plan);
 
         if (limit != -1 && current >= limit) {
             throw new BadRequestException(
@@ -46,20 +42,30 @@ public class PlanGuard {
         }
     }
 
+    public int clampDataRetentionDays(Long orgId, int requestedDays) {
+        return Math.min(requestedDays, retentionDays(getPlan(orgId)));
+    }
+
+    // ── plan resolution ──────────────────────────────────────────────────────
+
+    /**
+     * Resolves the plan from the subscriptions table.
+     * Falls back to FREE if no subscription row exists yet (e.g. new org, migration lag).
+     */
+    public Plan getPlan(Long orgId) {
+        return subscriptionRepository.findByOrgId(orgId)
+                .map(s -> s.getPlan())
+                .orElse(Plan.FREE);
+    }
+
+    // ── limit tables ─────────────────────────────────────────────────────────
+
     private int jenkinsLimit(Plan plan) {
         return switch (plan) {
             case FREE       -> 1;
             case PRO        -> 5;
-            case ENTERPRISE -> -1; // unlimited
+            case ENTERPRISE -> -1;
         };
-    }
-
-    public int clampDataRetentionDays(Long orgId, int requestedDays) {
-        Plan plan = orgRepository.findById(orgId)
-                .orElseThrow(() -> new BadRequestException("Organization not found"))
-                .getPlan();
-        int maxDays = retentionDays(plan);
-        return Math.min(requestedDays, maxDays);
     }
 
     private int memberLimit(Plan plan) {

@@ -7,6 +7,7 @@ import com.qalytix.entity.enums.BuildStatus;
 import com.qalytix.integration.jenkins.JenkinsBuildInfo;
 import com.qalytix.integration.jenkins.JenkinsClient;
 import com.qalytix.integration.jenkins.JenkinsJobInfo;
+import com.qalytix.integration.notification.NotificationDispatcher;
 import com.qalytix.repository.BuildRepository;
 import com.qalytix.repository.JenkinsConfigRepository;
 import com.qalytix.repository.JobRepository;
@@ -35,6 +36,7 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
     private final BuildRepository             buildRepository;
     private final BuildEventPublisher         buildEventPublisher;
     private final TestResultIngestionService  testResultIngestionService;
+    private final NotificationDispatcher      notificationDispatcher;
 
     @Override
     @Scheduled(fixedDelayString = "${app.jenkins.poll-delay-ms:300000}")
@@ -143,6 +145,7 @@ public class JenkinsIngestionServiceImpl implements JenkinsIngestionService {
                 status, saved.getDurationMs(), saved.getStartedAt(), saved.getFinishedAt()));
 
         testResultIngestionService.ingestForBuild(config, job, saved);
+        notificationDispatcher.onBuildCompleted(config.getOrgId(), job.getId(), job.getJenkinsJobName(), saved);
     }
 
     private BuildStatus toStatus(JenkinsBuildInfo info) {

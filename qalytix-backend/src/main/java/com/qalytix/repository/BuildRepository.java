@@ -66,4 +66,12 @@ public interface BuildRepository extends JpaRepository<Build, Long> {
             ORDER BY b.startedAt DESC
             """)
     List<Build> findRecentByOrgIdTestJobsOnly(@Param("orgId") Long orgId, Pageable pageable);
+
+    /** Last N builds for a specific job, newest first — used to detect consecutive failures. */
+    @Query("""
+            SELECT b FROM Build b
+            WHERE b.jobId = :jobId AND b.orgId = :orgId
+            ORDER BY b.buildNumber DESC
+            """)
+    List<Build> findRecentByJobId(@Param("jobId") Long jobId, @Param("orgId") Long orgId, Pageable pageable);
 }

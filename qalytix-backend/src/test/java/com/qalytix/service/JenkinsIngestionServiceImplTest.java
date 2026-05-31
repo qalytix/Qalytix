@@ -7,6 +7,7 @@ import com.qalytix.entity.enums.BuildStatus;
 import com.qalytix.integration.jenkins.JenkinsBuildInfo;
 import com.qalytix.integration.jenkins.JenkinsClient;
 import com.qalytix.integration.jenkins.JenkinsJobInfo;
+import com.qalytix.integration.notification.NotificationDispatcher;
 import com.qalytix.repository.BuildRepository;
 import com.qalytix.repository.JenkinsConfigRepository;
 import com.qalytix.repository.JobRepository;
@@ -37,6 +38,7 @@ class JenkinsIngestionServiceImplTest {
     @Mock BuildRepository                buildRepository;
     @Mock BuildEventPublisher            buildEventPublisher;
     @Mock TestResultIngestionService     testResultIngestionService;
+    @Mock NotificationDispatcher         notificationDispatcher;
 
     @InjectMocks JenkinsIngestionServiceImpl service;
 

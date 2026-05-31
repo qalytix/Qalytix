@@ -9,32 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.6.0] - 2026-05-28
+
+Phase 5 — Billing & Subscription + Phase 6 — Notifications (Teams & Slack)
+
 ### Backend
 
 **Added**
-- `V4__add_job_test_flag_and_views.sql` migration: adds `is_test_job BOOLEAN DEFAULT FALSE` and `view_names TEXT DEFAULT '|All|'` columns to `jobs`; index `idx_jobs_org_is_test_job` for fast filtering
-- `Job` entity: `isTestJob` and `viewNames` (pipe-delimited) fields
-- `JenkinsClient.fetchViewsByJob()`: single API call to `GET /api/json?tree=views[name,jobs[name]]` returns a `Map<jobName, List<viewName>>`; `JenkinsViewInfo` and `JenkinsViewsResponse` record models
-- `JenkinsIngestionServiceImpl.syncConfig()`: fetches views on each sync and stores them on every job as pipe-delimited `viewNames` (e.g. `|All|Backend|Nightly|`)
-- `TestResultIngestionServiceImpl`: marks a job as `isTestJob = true` via `jobRepository.markAsTestJob()` the first time test results are successfully ingested
-- `TestResultRepository.findJobStats()`: filters to `j.is_test_job = TRUE` so only test jobs appear in analytics
-- `JobRepository`: `markAsTestJob()` (`@Modifying`), `findAllByOrgIdAndIsTestJob()`, `findAllByOrgIdAndView()`, `findAllByOrgIdAndViewAndIsTestJob()`
-- `JobResponse`: `isTestJob` and `viewNames` (List<String>) fields
-- `JobService.listForCurrentOrg(String view)` — optional view filter; `getDistinctViews()` — returns sorted distinct view names for the org
-- `JobController`: `GET /api/v1/jobs?view=<name>` filter param; `GET /api/v1/jobs/views` endpoint returning available Jenkins view names
-- `DashboardService.getStats(boolean testJobsOnly)` — when `true`, stats and recent builds are scoped to jobs with `isTestJob = true`
-- `DashboardController`: `GET /api/v1/dashboard/stats?testJobsOnly=false` optional param
-- `BuildRepository`: four `testJobsOnly` query variants (`countByOrgIdAndStatusAndTestJobs`, `countByOrgIdAndStartedAtAfterAndTestJobs`, `countByOrgIdAndStatusAndStartedAtAfterAndTestJobs`, `findRecentByOrgIdTestJobsOnly`) using JPQL subquery on `Job.isTestJob`
+- `V5__create_subscriptions.sql`: `subscriptions` table (Stripe customer/subscription IDs, plan, status, billing period, period dates); seeds FREE/ACTIVE row for all existing orgs
+- `Subscription` entity, `SubscriptionRepository`, `SubscriptionStatus` enum, `BillingPeriod` enum
+- `StripeService`: full integration stub — all methods marked with `TODO: STRIPE` and return mock responses until keys are configured; `isConfigured()` gate
+- `BillingService` / `BillingServiceImpl`: `getCurrentBilling()` with live usage meters, `createCheckoutSession()`, `createPortalSession()`
+- `BillingController` at `/api/v1/billing`: `GET /plan`, `POST /checkout`, `POST /portal`
+- `PlanGuard` refactored: now resolves the plan from `subscriptions` table instead of `organizations`; `getPlan(orgId)` fallback to FREE when no subscription row exists
+- `WebClientConfig`: `RestTemplate` bean for HTTP webhook calls
+- `V6__create_notification_configs.sql`: `notification_configs` and `notification_events` tables
+- `NotificationConfig` entity, `NotificationEvent` entity, `NotificationChannel` enum, `TriggerEvent` enum
+- `NotificationConfigRepository`, `NotificationEventRepository`
+- `TeamsNotificationService`: posts MessageCard payload to Microsoft Teams Incoming Webhook
+- `SlackNotificationService`: posts Block Kit payload to Slack Incoming Webhook
+- `NotificationPayload` record: channel-agnostic payload for Teams/Slack senders
+- `NotificationDispatcher`: evaluates trigger rules (`onBuildFailure`, `onConsecutiveFailures` with configurable threshold) and fires notifications `@Async` after each build; records every attempt in `notification_events`
+- `BuildRepository.findRecentByJobId()`: last N builds for a job ordered by build number — used for consecutive failure detection
+- `JenkinsIngestionServiceImpl`: calls `notificationDispatcher.onBuildCompleted()` after each build upsert
+- `NotificationService` / `NotificationServiceImpl`: CRUD for configs, test-send, history (last 100 events)
+- `NotificationController` at `/api/v1/notifications`: `GET /configs`, `POST /configs`, `PUT /configs/{id}`, `DELETE /configs/{id}`, `POST /configs/{id}/test`, `GET /history`
+- `V4__add_job_test_flag_and_views.sql` migration: `is_test_job BOOLEAN DEFAULT FALSE` and `view_names TEXT DEFAULT '|All|'` on jobs table
+- `Job` entity: `isTestJob`, `viewNames` (pipe-delimited) fields
+- `JenkinsClient.fetchViewsByJob()`: `GET /api/json?tree=views[name,jobs[name]]` → `Map<jobName, List<viewName>>`
+- `JobRepository`: `markAsTestJob()`, `findAllByOrgIdAndIsTestJob()`, `findAllByOrgIdAndView()`, `findAllByOrgIdAndViewAndIsTestJob()`
+- `DashboardService.getStats(boolean testJobsOnly)`: scopes stats to test jobs when flagged; four `testJobsOnly` variants in `BuildRepository`
+- `TestNG native XML parser` (Strategy 4): `TestNGXmlParser` handles `<testng-results>` root; skips `is-config="true"` lifecycle methods; reads `duration-ms` in ms; extracts `<exception><message>` CDATA
+
+**Fixed**
+- `JenkinsConfigServiceImpl.update()`: `apiToken` guard changed from `!= null` to `!= null && !isBlank()` — blank token in edit form no longer wipes the stored token
+- `TestResultRepository.findJobStats()`: `yesterdayTotal`/`todayTotal` now count all test runs (`tr.id IS NOT NULL`) rather than passed-only — builds that fail all tests no longer show 0
 
 ### Frontend
 
 **Added**
-- `Job` type: `isTestJob: boolean` and `viewNames: string[]` fields
-- `getJobViews()` API function — `GET /jobs/views`
-- `getJobs(view?)` — passes `?view=<name>` when a non-All view is selected
-- `getDashboardStats(testJobsOnly?)` — passes `?testJobsOnly=true` when toggled
-- **Jobs page** — Jenkins view selector: pill buttons (All + each view name) fetched from `/jobs/views`; re-fetches jobs on view change; "Tests" badge (flask icon) on jobs with `isTestJob = true`
-- **Dashboard page** — "All jobs / Test jobs only" toggle button; re-fetches stats on toggle; "Recent builds" heading shows `(test jobs)` suffix when filtered; empty-state message when no test-job builds exist
+- `types/billing.ts`: `BillingInfo`, `CheckoutSession`, `CreateCheckoutRequest`, `PLAN_META` constant with pricing/feature data for all three tiers
+- `api/billing.ts`: `getBillingInfo()`, `createCheckoutSession()`, `createPortalSession()`
+- `BillingPage`: current plan card, subscription status badge, usage meters (Jenkins connections, members, data retention) with colour-coded progress bars; Manage Billing portal button
+- `PlanComparePage` at `/billing/upgrade`: plan comparison table with monthly/annual toggle, "Most popular" highlight, checkout redirect; Enterprise "Contact us" link
+- `PlanLimitBanner` component: warning variant (amber, dismissible) and blocking variant (red, non-dismissible) shown when approaching or at plan limits
+- `CheckoutSuccessPage` at `/billing/success`: post-Stripe-checkout confirmation, auto-redirects to billing after 3 s
+- `CheckoutCancelPage` at `/billing/cancel`: post-Stripe-cancel page with "View plans" and "Back to billing" actions
+- `types/notifications.ts`, `api/notifications.ts`: full type definitions and API functions for notification configs and history
+- `NotificationsPage`: add/edit/delete webhook form (name, channel, webhook URL, trigger rule checkboxes); test-send button; notification history table (status, channel, trigger, job, build, timestamp, error)
+- Jobs page: Jenkins view selector pill buttons; "Tests" badge on test jobs
+- Dashboard page: "All jobs / Test jobs only" toggle
 
 ---
 
@@ -201,7 +227,9 @@ Phase 1 — SaaS Foundation & Authentication
 
 ---
 
-[Unreleased]: https://github.com/your-org/qalytix/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/your-org/qalytix/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/your-org/qalytix/compare/v0.4.1...v0.6.0
+[0.4.1]: https://github.com/your-org/qalytix/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/your-org/qalytix/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/your-org/qalytix/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/your-org/qalytix/compare/v0.1.0...v0.2.0
