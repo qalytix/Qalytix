@@ -83,7 +83,7 @@ public class InvitationServiceImpl implements InvitationService {
                 .expiresAt(OffsetDateTime.now().plusDays(INVITATION_EXPIRY_DAYS))
                 .build());
 
-        String acceptUrl = appProperties.getBaseUrl() + "/invitations/accept?token=" + invitation.getToken();
+        String acceptUrl = appProperties.getBaseUrl() + "/invite/accept?token=" + invitation.getToken();
         emailService.sendInvitationEmail(email, org.getName(), inviter.getFullName(), acceptUrl);
 
         return toResponse(invitation);

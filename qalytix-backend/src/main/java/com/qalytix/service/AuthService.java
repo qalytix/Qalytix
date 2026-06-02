@@ -1,8 +1,6 @@
 package com.qalytix.service;
 
-import com.qalytix.dto.request.LoginRequest;
-import com.qalytix.dto.request.RefreshRequest;
-import com.qalytix.dto.request.RegisterRequest;
+import com.qalytix.dto.request.*;
 import com.qalytix.dto.response.AuthResponse;
 
 public interface AuthService {
@@ -14,4 +12,10 @@ public interface AuthService {
     AuthResponse refresh(RefreshRequest request);
 
     void logout(Long userId, Long orgId);
+
+    void forgotPassword(ForgotPasswordRequest request);
+
+    void resetPassword(ResetPasswordRequest request);
+
+    void changePassword(Long userId, ChangePasswordRequest request);
 }

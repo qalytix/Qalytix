@@ -1,9 +1,9 @@
 package com.qalytix.service.impl;
 
-import com.qalytix.dto.request.LoginRequest;
-import com.qalytix.dto.request.RefreshRequest;
-import com.qalytix.dto.request.RegisterRequest;
+import com.qalytix.dto.request.*;
 import com.qalytix.dto.response.AuthResponse;
+import com.qalytix.entity.PasswordResetToken;
+import com.qalytix.repository.PasswordResetTokenRepository;
 import com.qalytix.entity.*;
 import com.qalytix.entity.enums.MemberRole;
 import com.qalytix.entity.enums.MemberStatus;
@@ -17,6 +17,7 @@ import com.qalytix.service.AuthService;
 import com.qalytix.config.AppProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,13 +35,18 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final UserRepository userRepository;
-    private final OrganizationRepository orgRepository;
+    private final UserRepository               userRepository;
+    private final OrganizationRepository       orgRepository;
     private final OrganizationMemberRepository memberRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
-    private final AppProperties appProperties;
+    private final RefreshTokenRepository       refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordEncoder              passwordEncoder;
+    private final JwtUtil                      jwtUtil;
+    private final AppProperties                appProperties;
+    private final com.qalytix.service.EmailService emailService;
+
+    @Value("${app.base-url:http://localhost:3000}")
+    private String appBaseUrl;
 
     @Override
     @Transactional
@@ -130,6 +136,65 @@ public class AuthServiceImpl implements AuthService {
     public void logout(Long userId, Long orgId) {
         refreshTokenRepository.revokeAllByUserIdAndOrgId(userId, orgId);
         log.debug("Revoked refresh tokens for user={} org={}", userId, orgId);
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        // Always return success to prevent email enumeration
+        userRepository.findByEmail(request.email().toLowerCase().strip()).ifPresent(user -> {
+            passwordResetTokenRepository.deleteAllByUserId(user.getId());
+
+            String rawToken = UUID.randomUUID().toString();
+            passwordResetTokenRepository.save(PasswordResetToken.builder()
+                    .userId(user.getId())
+                    .tokenHash(hashToken(rawToken))
+                    .expiresAt(OffsetDateTime.now().plusMinutes(30))
+                    .build());
+
+            String resetUrl = appBaseUrl + "/reset-password?token=" + rawToken;
+            emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
+            log.info("Password reset email sent to user={}", user.getId());
+        });
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String hash = hashToken(request.token());
+        PasswordResetToken prt = passwordResetTokenRepository.findByTokenHash(hash)
+                .orElseThrow(() -> new BadRequestException("Invalid or expired reset link."));
+
+        if (prt.isExpired()) throw new BadRequestException("This reset link has expired.");
+        if (prt.isUsed())    throw new BadRequestException("This reset link has already been used.");
+
+        User user = userRepository.findById(prt.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        prt.setUsedAt(OffsetDateTime.now());
+        passwordResetTokenRepository.save(prt);
+
+        // Revoke all active sessions so old passwords can't be used via refresh
+        refreshTokenRepository.revokeAllByUserId(user.getId());
+        log.info("Password reset completed for user={}", user.getId());
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Current password is incorrect.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        log.info("Password changed for user={}", userId);
     }
 
     // ------------------------------------------------------------------ helpers

@@ -1,6 +1,10 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
+import AcceptInvitationPage from './features/auth/AcceptInvitationPage'
+import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
+import ResetPasswordPage from './features/auth/ResetPasswordPage'
+import ProfilePage from './features/auth/ProfilePage'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import AppShell from './components/layout/AppShell'
 import DashboardPage from './features/dashboard/DashboardPage'
@@ -17,8 +21,11 @@ import CheckoutSuccessPage from './features/billing/CheckoutSuccessPage'
 import CheckoutCancelPage from './features/billing/CheckoutCancelPage'
 
 const router = createBrowserRouter([
-  { path: '/login',    element: <LoginPage /> },
-  { path: '/register', element: <RegisterPage /> },
+  { path: '/login',            element: <LoginPage /> },
+  { path: '/register',         element: <RegisterPage /> },
+  { path: '/forgot-password',  element: <ForgotPasswordPage /> },
+  { path: '/reset-password',   element: <ResetPasswordPage /> },
+  { path: '/invite/accept',    element: <AcceptInvitationPage /> },
   {
     element: <ProtectedRoute />,
     children: [
@@ -38,6 +45,7 @@ const router = createBrowserRouter([
           { path: 'billing/upgrade',          element: <PlanComparePage /> },
           { path: 'billing/success',          element: <CheckoutSuccessPage /> },
           { path: 'billing/cancel',           element: <CheckoutCancelPage /> },
+          { path: 'profile',                  element: <ProfilePage /> },
         ],
       },
     ],
