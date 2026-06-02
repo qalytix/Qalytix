@@ -131,4 +131,73 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
     List<JobStatProjection> findJobStats(
             @Param("orgId") Long orgId,
             @Param("since") Instant since);
+
+    // ── report queries (date range) ───────────────────────────────────────────
+
+    @Query(value = """
+            SELECT tr.test_suite AS moduleName,
+                   COUNT(*)      AS total,
+                   SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END) AS passed
+            FROM test_results tr
+            JOIN builds b ON tr.build_id = b.id
+            WHERE tr.org_id  = :orgId
+              AND (:jobId IS NULL OR tr.job_id = :jobId)
+              AND b.started_at BETWEEN :fromDate AND :toDate
+            GROUP BY tr.test_suite
+            ORDER BY SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0) ASC
+            """, nativeQuery = true)
+    List<ModuleStabilityProjection> findModuleStabilityInRange(
+            @Param("orgId") Long orgId,
+            @Param("jobId") Long jobId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
+
+    @Query(value = """
+            SELECT tr.test_suite AS testSuite,
+                   tr.test_name  AS testName,
+                   COUNT(*)      AS totalRuns,
+                   SUM(CASE WHEN tr.status = 'FAILED' THEN 1 ELSE 0 END) AS failCount,
+                   SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END) AS passCount
+            FROM test_results tr
+            JOIN builds b ON tr.build_id = b.id
+            WHERE tr.org_id = :orgId
+              AND (:jobId IS NULL OR tr.job_id = :jobId)
+              AND b.started_at BETWEEN :fromDate AND :toDate
+            GROUP BY tr.test_suite, tr.test_name
+            HAVING SUM(CASE WHEN tr.status = 'FAILED' THEN 1 ELSE 0 END) > 0
+               AND SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END) > 0
+            ORDER BY (LEAST(
+                SUM(CASE WHEN tr.status='FAILED' THEN 1 ELSE 0 END),
+                SUM(CASE WHEN tr.status='PASSED' THEN 1 ELSE 0 END))::float / NULLIF(COUNT(*),0)) DESC
+            LIMIT 20
+            """, nativeQuery = true)
+    List<TestAggProjection> findFlakyTestsInRange(
+            @Param("orgId") Long orgId,
+            @Param("jobId") Long jobId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
+
+    @Query(value = """
+            SELECT COALESCE(j.display_name, j.jenkins_job_name) AS jobName,
+                   COUNT(tr.id) AS totalTests,
+                   j.last_build_status AS latestBuildStatus,
+                   0 AS yesterdayTotal, 0 AS todayTotal,
+                   SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END) AS passedTotal,
+                   SUM(CASE WHEN tr.status = 'FAILED' THEN 1 ELSE 0 END) AS failedTotal,
+                   0 AS noResultBuilds
+            FROM jobs j
+            LEFT JOIN builds b  ON b.job_id = j.id AND b.org_id = :orgId
+                                AND b.started_at BETWEEN :fromDate AND :toDate
+            LEFT JOIN test_results tr ON tr.build_id = b.id AND tr.org_id = :orgId
+            WHERE j.org_id = :orgId AND j.is_test_job = TRUE
+              AND (:jobId IS NULL OR j.id = :jobId)
+            GROUP BY j.id, j.display_name, j.jenkins_job_name, j.last_build_status
+            HAVING COUNT(tr.id) > 0
+            ORDER BY jobName
+            """, nativeQuery = true)
+    List<JobStatProjection> findJobStatsInRange(
+            @Param("orgId") Long orgId,
+            @Param("jobId") Long jobId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
 }
