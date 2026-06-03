@@ -18,4 +18,6 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
     List<OrganizationMember> findByOrganizationIdAndStatus(Long orgId, MemberStatus status);
 
     long countByOrganizationId(Long orgId);
+
+    List<OrganizationMember> findAllByOrganizationId(Long orgId);
 }

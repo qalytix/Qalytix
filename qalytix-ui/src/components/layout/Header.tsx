@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, ChevronDown, Building2, User } from 'lucide-react'
+import { LogOut, ChevronDown, Building2, User, Shield } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { logout } from '../../api/auth'
 
 export default function Header() {
-  const { user, org, role, clearAuth } = useAuthStore()
+  const { user, org, role, superAdmin, clearAuth } = useAuthStore()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -61,6 +61,15 @@ export default function Header() {
                 <User className="w-4 h-4" />
                 Profile
               </button>
+              {superAdmin && (
+                <button
+                  onClick={() => { setMenuOpen(false); navigate('/admin') }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
+                >
+                  <Shield className="w-4 h-4" />
+                  Admin portal
+                </button>
+              )}
               <div className="border-t border-slate-100 my-1" />
               <button
                 onClick={handleLogout}

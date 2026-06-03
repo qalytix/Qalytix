@@ -68,7 +68,7 @@ class AuthServiceImplTest {
         jwtProps = new AppProperties.Jwt();
         jwtProps.setRefreshExpiryMs(604_800_000L);
         when(appProperties.getJwt()).thenReturn(jwtProps);
-        when(jwtUtil.generateAccessToken(anyLong(), anyLong(), anyString(), any())).thenReturn("access-token");
+        when(jwtUtil.generateAccessToken(anyLong(), anyLong(), anyString(), any(), anyBoolean())).thenReturn("access-token");
         when(jwtUtil.generateRefreshToken()).thenReturn("raw-refresh-token");
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }

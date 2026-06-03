@@ -20,19 +20,25 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtUtil {
 
-    private static final String CLAIM_USER_ID = "userId";
-    private static final String CLAIM_ORG_ID  = "orgId";
-    private static final String CLAIM_ROLE    = "role";
+    private static final String CLAIM_USER_ID    = "userId";
+    private static final String CLAIM_ORG_ID     = "orgId";
+    private static final String CLAIM_ROLE       = "role";
+    private static final String CLAIM_SUPER_ADMIN = "superAdmin";
 
     private final AppProperties properties;
 
     public String generateAccessToken(Long userId, Long orgId, String email, MemberRole role) {
+        return generateAccessToken(userId, orgId, email, role, false);
+    }
+
+    public String generateAccessToken(Long userId, Long orgId, String email, MemberRole role, boolean superAdmin) {
         long now = System.currentTimeMillis();
         return Jwts.builder()
                 .subject(email)
                 .claim(CLAIM_USER_ID, userId)
                 .claim(CLAIM_ORG_ID, orgId)
                 .claim(CLAIM_ROLE, role.name())
+                .claim(CLAIM_SUPER_ADMIN, superAdmin)
                 .issuedAt(new Date(now))
                 .expiration(new Date(now + properties.getJwt().getExpiryMs()))
                 .signWith(signingKey())
@@ -69,6 +75,11 @@ public class JwtUtil {
     public MemberRole extractRole(String token) {
         String role = parseClaims(token).get(CLAIM_ROLE, String.class);
         return MemberRole.valueOf(role);
+    }
+
+    public boolean extractSuperAdmin(String token) {
+        Boolean flag = parseClaims(token).get(CLAIM_SUPER_ADMIN, Boolean.class);
+        return Boolean.TRUE.equals(flag);
     }
 
     private Claims parseClaims(String token) {

@@ -6,6 +6,7 @@ import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
 import ResetPasswordPage from './features/auth/ResetPasswordPage'
 import ProfilePage from './features/auth/ProfilePage'
 import ProtectedRoute from './components/common/ProtectedRoute'
+import SuperAdminRoute from './components/common/SuperAdminRoute'
 import AppShell from './components/layout/AppShell'
 import DashboardPage from './features/dashboard/DashboardPage'
 import AnalyticsPage from './features/analytics/AnalyticsPage'
@@ -19,6 +20,10 @@ import BillingPage from './features/billing/BillingPage'
 import PlanComparePage from './features/billing/PlanComparePage'
 import CheckoutSuccessPage from './features/billing/CheckoutSuccessPage'
 import CheckoutCancelPage from './features/billing/CheckoutCancelPage'
+import AdminLayout from './features/admin/AdminLayout'
+import AdminStatsPage from './features/admin/AdminStatsPage'
+import AdminOrgsPage from './features/admin/AdminOrgsPage'
+import AdminOrgDetailPage from './features/admin/AdminOrgDetailPage'
 
 const router = createBrowserRouter([
   { path: '/login',            element: <LoginPage /> },
@@ -46,6 +51,21 @@ const router = createBrowserRouter([
           { path: 'billing/success',          element: <CheckoutSuccessPage /> },
           { path: 'billing/cancel',           element: <CheckoutCancelPage /> },
           { path: 'profile',                  element: <ProfilePage /> },
+        ],
+      },
+      // Admin portal — separate layout, SUPER_ADMIN only
+      {
+        element: <SuperAdminRoute />,
+        children: [
+          {
+            path: 'admin',
+            element: <AdminLayout />,
+            children: [
+              { index: true,          element: <AdminStatsPage /> },
+              { path: 'orgs',         element: <AdminOrgsPage /> },
+              { path: 'orgs/:orgId',  element: <AdminOrgDetailPage /> },
+            ],
+          },
         ],
       },
     ],

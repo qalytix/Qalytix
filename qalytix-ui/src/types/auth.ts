@@ -21,6 +21,7 @@ export interface AuthResponse {
   user: UserInfo
   org: OrgInfo
   role: MemberRole
+  superAdmin: boolean
 }
 
 export interface ApiResponse<T> {

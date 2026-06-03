@@ -33,6 +33,10 @@ public class User {
     @Builder.Default
     private boolean emailVerified = false;
 
+    @Column(name = "is_super_admin", nullable = false)
+    @Builder.Default
+    private boolean superAdmin = false;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private OffsetDateTime createdAt;

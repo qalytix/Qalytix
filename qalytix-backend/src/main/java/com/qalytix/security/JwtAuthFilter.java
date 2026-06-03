@@ -45,19 +45,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private void authenticate(String token) {
-        Long userId  = jwtUtil.extractUserId(token);
-        Long orgId   = jwtUtil.extractOrgId(token);
-        String email = jwtUtil.extractEmail(token);
-        var role     = jwtUtil.extractRole(token);
+        Long userId    = jwtUtil.extractUserId(token);
+        Long orgId     = jwtUtil.extractOrgId(token);
+        String email   = jwtUtil.extractEmail(token);
+        var role       = jwtUtil.extractRole(token);
+        boolean isSuperAdmin = jwtUtil.extractSuperAdmin(token);
 
         TenantContext.setOrgId(orgId);
 
-        var principal = new AuthenticatedUser(userId, orgId, email, role);
-        var auth = new UsernamePasswordAuthenticationToken(
-                principal,
-                null,
-                List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
-        );
+        var principal = new AuthenticatedUser(userId, orgId, email, role, isSuperAdmin);
+
+        var authorities = isSuperAdmin
+                ? List.of(new SimpleGrantedAuthority("ROLE_" + role.name()),
+                          new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"))
+                : List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+
+        var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 

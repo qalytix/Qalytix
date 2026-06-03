@@ -8,6 +8,7 @@ interface AuthState {
   user: UserInfo | null
   org: OrgInfo | null
   role: MemberRole | null
+  superAdmin: boolean
   isAuthenticated: boolean
 
   setAuth: (response: AuthResponse) => void
@@ -23,6 +24,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       org: null,
       role: null,
+      superAdmin: false,
       isAuthenticated: false,
 
       setAuth: (response) =>
@@ -32,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
           user: response.user,
           org: response.org,
           role: response.role,
+          superAdmin: response.superAdmin ?? false,
           isAuthenticated: true,
         }),
 
@@ -44,17 +47,18 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           org: null,
           role: null,
+          superAdmin: false,
           isAuthenticated: false,
         }),
     }),
     {
       name: 'qalytix-auth',
-      // Only persist refresh token and user/org info — not the access token
       partialize: (state) => ({
         refreshToken: state.refreshToken,
         user: state.user,
         org: state.org,
         role: state.role,
+        superAdmin: state.superAdmin,
         isAuthenticated: state.isAuthenticated,
       }),
     },

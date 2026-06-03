@@ -8,7 +8,8 @@ public record AuthResponse(
         String refreshToken,
         UserInfo user,
         OrgInfo org,
-        MemberRole role
+        MemberRole role,
+        boolean superAdmin
 ) {
     public record UserInfo(Long id, String email, String fullName) {}
 

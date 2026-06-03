@@ -120,14 +120,15 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new UnauthorizedException("Membership no longer active"));
 
         String newAccessToken = jwtUtil.generateAccessToken(
-                user.getId(), org.getId(), user.getEmail(), membership.getRole());
+                user.getId(), org.getId(), user.getEmail(), membership.getRole(), user.isSuperAdmin());
 
         return new AuthResponse(
                 newAccessToken,
                 request.refreshToken(),   // reuse same refresh token until it expires
                 new AuthResponse.UserInfo(user.getId(), user.getEmail(), user.getFullName()),
                 new AuthResponse.OrgInfo(org.getId(), org.getName(), org.getSlug(), org.getPlan()),
-                membership.getRole()
+                membership.getRole(),
+                user.isSuperAdmin()
         );
     }
 
@@ -200,7 +201,7 @@ public class AuthServiceImpl implements AuthService {
     // ------------------------------------------------------------------ helpers
 
     private AuthResponse buildAuthResponse(User user, Organization org, MemberRole role) {
-        String accessToken  = jwtUtil.generateAccessToken(user.getId(), org.getId(), user.getEmail(), role);
+        String accessToken  = jwtUtil.generateAccessToken(user.getId(), org.getId(), user.getEmail(), role, user.isSuperAdmin());
         String refreshToken = jwtUtil.generateRefreshToken();
 
         refreshTokenRepository.save(RefreshToken.builder()
@@ -216,7 +217,8 @@ public class AuthServiceImpl implements AuthService {
                 refreshToken,
                 new AuthResponse.UserInfo(user.getId(), user.getEmail(), user.getFullName()),
                 new AuthResponse.OrgInfo(org.getId(), org.getName(), org.getSlug(), org.getPlan()),
-                role
+                role,
+                user.isSuperAdmin()
         );
     }
 

@@ -153,7 +153,7 @@ class InvitationServiceImplTest {
         when(memberRepository.existsByOrganizationIdAndUserId(10L, 2L)).thenReturn(false);
         when(memberRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(invitationRepository.save(any())).thenReturn(invitation);
-        when(jwtUtil.generateAccessToken(anyLong(), anyLong(), anyString(), any())).thenReturn("access-token");
+        when(jwtUtil.generateAccessToken(anyLong(), anyLong(), anyString(), any(), anyBoolean())).thenReturn("access-token");
         when(jwtUtil.generateRefreshToken()).thenReturn("refresh-token");
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -184,7 +184,7 @@ class InvitationServiceImplTest {
         when(memberRepository.existsByOrganizationIdAndUserId(10L, 5L)).thenReturn(false);
         when(memberRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(invitationRepository.save(any())).thenReturn(invitation);
-        when(jwtUtil.generateAccessToken(anyLong(), anyLong(), anyString(), any())).thenReturn("access-token");
+        when(jwtUtil.generateAccessToken(anyLong(), anyLong(), anyString(), any(), anyBoolean())).thenReturn("access-token");
         when(jwtUtil.generateRefreshToken()).thenReturn("refresh-token");
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 

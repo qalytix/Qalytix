@@ -20,6 +20,10 @@ public interface BuildRepository extends JpaRepository<Build, Long> {
 
     Optional<Build> findByJobIdAndBuildNumber(Long jobId, int buildNumber);
 
+    long countByOrgId(Long orgId);
+
+    long countByStartedAtAfter(Instant since);
+
     long countByOrgIdAndStatus(Long orgId, BuildStatus status);
 
     long countByOrgIdAndStartedAtAfter(Long orgId, Instant since);

@@ -10,5 +10,11 @@ public record AuthenticatedUser(
         Long userId,
         Long orgId,
         String email,
-        MemberRole role
-) {}
+        MemberRole role,
+        boolean superAdmin
+) {
+    /** Backwards-compatible constructor for non-admin tokens. */
+    public AuthenticatedUser(Long userId, Long orgId, String email, MemberRole role) {
+        this(userId, orgId, email, role, false);
+    }
+}

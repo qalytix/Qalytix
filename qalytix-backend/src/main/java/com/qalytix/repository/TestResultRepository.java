@@ -17,6 +17,10 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
 
     boolean existsByBuildId(Long buildId);
 
+    long countByOrgId(Long orgId);
+
+    long countByCreatedAtAfter(Instant since);
+
     @Modifying
     @Query("DELETE FROM TestResult t WHERE t.buildId = :buildId")
     void deleteByBuildId(@Param("buildId") Long buildId);

@@ -166,7 +166,7 @@ public class InvitationServiceImpl implements InvitationService {
     }
 
     private AuthResponse buildAuthResponse(User user, Organization org, MemberRole role) {
-        String accessToken  = jwtUtil.generateAccessToken(user.getId(), org.getId(), user.getEmail(), role);
+        String accessToken  = jwtUtil.generateAccessToken(user.getId(), org.getId(), user.getEmail(), role, user.isSuperAdmin());
         String refreshToken = jwtUtil.generateRefreshToken();
 
         refreshTokenRepository.save(RefreshToken.builder()
@@ -182,7 +182,8 @@ public class InvitationServiceImpl implements InvitationService {
                 refreshToken,
                 new AuthResponse.UserInfo(user.getId(), user.getEmail(), user.getFullName()),
                 new AuthResponse.OrgInfo(org.getId(), org.getName(), org.getSlug(), org.getPlan()),
-                role
+                role,
+                user.isSuperAdmin()
         );
     }
 
