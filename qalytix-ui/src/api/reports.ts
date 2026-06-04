@@ -24,12 +24,7 @@ export const downloadReportCsv = (params: ReportParams): void => {
   if (params.from)  p.set('from', params.from)
   if (params.to)    p.set('to', params.to)
 
-  // Trigger browser download by navigating to the CSV endpoint
-  const token = localStorage.getItem('qalytix-auth')
-    ? JSON.parse(localStorage.getItem('qalytix-auth')!)?.state?.refreshToken
-    : null
-
-  // Use fetch + blob to stream the CSV with auth headers
+  // Stream CSV with auth headers via Axios (interceptor attaches the Bearer token)
   const url = `${base}/reports/export/csv?${p.toString()}`
   import('../api/axiosInstance').then(({ default: axiosInst }) => {
     axiosInst.get(url, { responseType: 'blob' }).then(res => {
