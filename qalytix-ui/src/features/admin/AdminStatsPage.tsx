@@ -45,7 +45,7 @@ export default function AdminStatsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={Building2}   label="Organisations"       value={stats.totalOrgs} />
-        <StatCard icon={Activity}    label="Active Subscriptions" value={stats.activeSubscriptions} color="text-emerald-600" />
+        <StatCard icon={Activity}    label="Paying Orgs" value={stats.activeSubscriptions} sub="Pro / Enterprise, active or trialing" color="text-emerald-600" />
         <StatCard icon={Users}       label="Total Users"         value={stats.totalUsers} color="text-amber-600" />
         <StatCard icon={GitBranch}   label="Total Builds"        value={stats.totalBuilds} color="text-slate-500" />
         <StatCard icon={FlaskConical} label="Total Test Results" value={stats.totalTestResults} color="text-purple-600" />
