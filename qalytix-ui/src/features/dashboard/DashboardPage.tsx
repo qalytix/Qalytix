@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Activity, CheckCircle, XCircle, Zap, FlaskConical } from 'lucide-react'
-import { getDashboardStats } from '../../api/dashboard'
+import { Activity, CheckCircle, XCircle, Zap, FlaskConical, History } from 'lucide-react'
+import { getDashboardStats, getBuildHistory } from '../../api/dashboard'
 import { useAuthStore } from '../../stores/authStore'
 import { useWebSocket } from '../../hooks/useWebSocket'
 import BuildStatusBadge from '../../components/common/BuildStatusBadge'
-import type { DashboardStats, BuildEvent, RecentBuild } from '../../types/dashboard'
+import BuildHistoryStrip from '../../components/common/BuildHistoryStrip'
+import type { DashboardStats, BuildEvent, RecentBuild, JobBuildHistory } from '../../types/dashboard'
 
 function StatCard({ icon: Icon, label, value, color }: {
   icon: React.ElementType; label: string; value: number; color: string
@@ -36,6 +37,8 @@ export default function DashboardPage() {
   const [stats, setStats]         = useState<DashboardStats | null>(null)
   const [loading, setLoading]     = useState(true)
   const [testJobsOnly, setTestJobsOnly] = useState(false)
+  const [history, setHistory]     = useState<JobBuildHistory[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
   const org = useAuthStore((s) => s.org)
 
   const load = useCallback(async (testOnly: boolean) => {
@@ -47,10 +50,21 @@ export default function DashboardPage() {
     }
   }, [])
 
+  const loadHistory = useCallback(async (testOnly: boolean) => {
+    try {
+      const { data } = await getBuildHistory(testOnly, 10)
+      setHistory(data.data)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     setLoading(true)
     load(testJobsOnly)
-  }, [load, testJobsOnly])
+    setHistoryLoading(true)
+    loadHistory(testJobsOnly)
+  }, [load, loadHistory, testJobsOnly])
 
   const handleBuildEvent = useCallback((event: BuildEvent) => {
     setStats(prev => {
@@ -109,6 +123,31 @@ export default function DashboardPage() {
         <StatCard icon={Zap}          label="Builds today"     value={s.todayTotal}    color="bg-slate-100 text-slate-500" />
         <StatCard icon={CheckCircle}  label="Passed today"     value={s.todaySuccess}  color="bg-green-50 text-green-600" />
         <StatCard icon={XCircle}      label="Failed today"     value={s.todayFailure}  color="bg-red-50 text-red-500" />
+      </div>
+
+      {/* Build status history (last 10 days) */}
+      <div className="bg-white rounded-xl border border-slate-200">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+          <History className="w-4 h-4 text-slate-400" />
+          <h2 className="text-sm font-semibold text-slate-900">Build history — last 10 days</h2>
+        </div>
+
+        {historyLoading ? (
+          <div className="p-8 text-center text-sm text-slate-500">Loading…</div>
+        ) : history.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500">
+            {testJobsOnly ? 'No test job builds in the last 10 days.' : 'No builds in the last 10 days.'}
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {history.map(job => (
+              <div key={job.jobId} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                <p className="text-sm font-medium text-slate-900 truncate min-w-0">{job.jobName}</p>
+                <BuildHistoryStrip history={job.history} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Recent activity */}

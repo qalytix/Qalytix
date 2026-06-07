@@ -14,7 +14,9 @@ import {
 import { Line, Bar } from 'react-chartjs-2'
 import { AlertTriangle, TrendingDown, Layers, RefreshCw, Table2, TrendingUp, Minus, Search, X } from 'lucide-react'
 import { getAnalyticsSummary } from '../../api/analytics'
+import { getJobs } from '../../api/jenkins'
 import type { AnalyticsSummaryResponse, JobStat } from '../../types/analytics'
+import type { Job } from '../../types/jenkins'
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -237,6 +239,14 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsSummaryResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [trendJobId, setTrendJobId] = useState<number | null>(null)
+  const [jobTrend, setJobTrend] = useState<AnalyticsSummaryResponse['failureTrend'] | null>(null)
+  const [trendLoading, setTrendLoading] = useState(false)
+
+  useEffect(() => {
+    getJobs().then(({ data }) => setJobs(data.data)).catch(() => setJobs([]))
+  }, [])
 
   async function load() {
     setLoading(true)
@@ -253,12 +263,29 @@ export default function AnalyticsPage() {
 
   useEffect(() => { load() }, [days])
 
-  const trendChart = data ? {
-    labels: data.failureTrend.map(p => p.date),
+  // Failure Trend can be drilled down to a single job without affecting the rest of the page.
+  useEffect(() => {
+    if (trendJobId === null) {
+      setJobTrend(null)
+      return
+    }
+    let cancelled = false
+    setTrendLoading(true)
+    getAnalyticsSummary(days, trendJobId)
+      .then(result => { if (!cancelled) setJobTrend(result.failureTrend) })
+      .catch(() => { if (!cancelled) setJobTrend([]) })
+      .finally(() => { if (!cancelled) setTrendLoading(false) })
+    return () => { cancelled = true }
+  }, [days, trendJobId])
+
+  const failureTrend = trendJobId !== null ? (jobTrend ?? []) : (data?.failureTrend ?? [])
+
+  const trendChart = {
+    labels: failureTrend.map(p => p.date),
     datasets: [
       {
         label: 'Failed',
-        data: data.failureTrend.map(p => p.failed),
+        data: failureTrend.map(p => p.failed),
         borderColor: '#ef4444',
         backgroundColor: 'rgba(239,68,68,0.08)',
         fill: true,
@@ -266,14 +293,14 @@ export default function AnalyticsPage() {
       },
       {
         label: 'Passed',
-        data: data.failureTrend.map(p => p.passed),
+        data: failureTrend.map(p => p.passed),
         borderColor: '#22c55e',
         backgroundColor: 'rgba(34,197,94,0.08)',
         fill: true,
         tension: 0.3,
       },
     ],
-  } : null
+  }
 
   const topFailingChart = data ? {
     labels: data.topFailingTests.map(t => t.testName.length > 30 ? t.testName.slice(0, 28) + '…' : t.testName),
@@ -348,11 +375,31 @@ export default function AnalyticsPage() {
 
           {/* Failure Trend */}
           <Card>
-            <SectionHeader icon={TrendingDown} title="Failure Trend" />
-            {data.failureTrend.length === 0 ? (
+            <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingDown className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-lg font-semibold text-slate-800">Failure Trend</h2>
+              </div>
+              <select
+                value={trendJobId ?? ''}
+                onChange={e => setTrendJobId(e.target.value ? Number(e.target.value) : null)}
+                className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">All jobs</option>
+                {jobs.map(j => (
+                  <option key={j.id} value={j.id}>{j.displayName ?? j.jenkinsJobName}</option>
+                ))}
+              </select>
+            </div>
+            {trendLoading ? (
+              <div className="flex items-center justify-center h-64 text-slate-400">
+                <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                Loading trend…
+              </div>
+            ) : failureTrend.length === 0 ? (
               <p className="text-slate-400 text-sm text-center py-10">No data for this period.</p>
             ) : (
-              <Line data={trendChart!} options={chartOptions} />
+              <Line data={trendChart} options={chartOptions} />
             )}
           </Card>
 

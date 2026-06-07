@@ -18,6 +18,17 @@ export interface DashboardStats {
   recentBuilds: RecentBuild[]
 }
 
+export interface DayStatus {
+  date: string
+  status: BuildStatus | null
+}
+
+export interface JobBuildHistory {
+  jobId: number
+  jobName: string
+  history: DayStatus[]
+}
+
 export interface BuildEvent {
   buildId: number
   jobId: number

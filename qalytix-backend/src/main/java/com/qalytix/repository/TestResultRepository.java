@@ -26,17 +26,24 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
     void deleteByBuildId(@Param("buildId") Long buildId);
 
     @Query(value = """
-            SELECT TO_CHAR(b.started_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
+            WITH latest_daily_builds AS (
+                SELECT DISTINCT ON (b.job_id, (b.started_at AT TIME ZONE 'UTC')::date)
+                       b.id AS build_id,
+                       (b.started_at AT TIME ZONE 'UTC')::date AS build_date
+                FROM builds b
+                WHERE b.org_id = :orgId
+                  AND (:jobId IS NULL OR b.job_id = :jobId)
+                  AND b.started_at >= :since
+                ORDER BY b.job_id, (b.started_at AT TIME ZONE 'UTC')::date, b.started_at DESC
+            )
+            SELECT TO_CHAR(ldb.build_date, 'YYYY-MM-DD') AS date,
                    COUNT(tr.id)               AS total,
                    SUM(CASE WHEN tr.status = 'FAILED' THEN 1 ELSE 0 END)  AS failed,
                    SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END)  AS passed
-            FROM test_results tr
-            JOIN builds b ON tr.build_id = b.id
-            WHERE tr.org_id = :orgId
-              AND (:jobId IS NULL OR tr.job_id = :jobId)
-              AND b.started_at >= :since
-            GROUP BY TO_CHAR(b.started_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')
-            ORDER BY date
+            FROM latest_daily_builds ldb
+            JOIN test_results tr ON tr.build_id = ldb.build_id AND tr.org_id = :orgId
+            GROUP BY ldb.build_date
+            ORDER BY ldb.build_date
             """, nativeQuery = true)
     List<FailureTrendProjection> findFailureTrend(
             @Param("orgId") Long orgId,
@@ -86,13 +93,20 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
             @Param("lim") int limit);
 
     @Query(value = """
+            WITH latest_daily_builds AS (
+                SELECT DISTINCT ON (b.job_id, (b.started_at AT TIME ZONE 'UTC')::date)
+                       b.id AS build_id
+                FROM builds b
+                WHERE b.org_id = :orgId
+                  AND (:jobId IS NULL OR b.job_id = :jobId)
+                  AND b.started_at >= :since
+                ORDER BY b.job_id, (b.started_at AT TIME ZONE 'UTC')::date, b.started_at DESC
+            )
             SELECT tr.test_suite AS moduleName,
                    COUNT(*)      AS total,
                    SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END) AS passed
-            FROM test_results tr
-            WHERE tr.org_id = :orgId
-              AND (:jobId IS NULL OR tr.job_id = :jobId)
-              AND tr.created_at >= :since
+            FROM latest_daily_builds ldb
+            JOIN test_results tr ON tr.build_id = ldb.build_id AND tr.org_id = :orgId
             GROUP BY tr.test_suite
             ORDER BY (SUM(CASE WHEN tr.status='PASSED' THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0)) ASC
             """, nativeQuery = true)
@@ -102,32 +116,40 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
             @Param("since") Instant since);
 
     @Query(value = """
+            WITH latest_daily_builds AS (
+                SELECT DISTINCT ON (b.job_id, (b.started_at AT TIME ZONE 'UTC')::date)
+                       b.id AS build_id,
+                       b.job_id AS job_id,
+                       b.status AS status,
+                       (b.started_at AT TIME ZONE 'UTC')::date AS build_date
+                FROM builds b
+                WHERE b.org_id = :orgId
+                  AND b.started_at >= :since
+                ORDER BY b.job_id, (b.started_at AT TIME ZONE 'UTC')::date, b.started_at DESC
+            )
             SELECT COALESCE(j.display_name, j.jenkins_job_name) AS jobName,
                    COUNT(tr.id) AS totalTests,
                    j.last_build_status AS latestBuildStatus,
-                   SUM(CASE WHEN (b.started_at AT TIME ZONE 'UTC')::date = CURRENT_DATE - INTERVAL '1 day'
+                   SUM(CASE WHEN ldb.build_date = CURRENT_DATE - INTERVAL '1 day'
                             AND tr.id IS NOT NULL THEN 1 ELSE 0 END) AS yesterdayTotal,
-                   SUM(CASE WHEN (b.started_at AT TIME ZONE 'UTC')::date = CURRENT_DATE
+                   SUM(CASE WHEN ldb.build_date = CURRENT_DATE
                             AND tr.id IS NOT NULL THEN 1 ELSE 0 END) AS todayTotal,
                    SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END) AS passedTotal,
                    SUM(CASE WHEN tr.status = 'FAILED' THEN 1 ELSE 0 END) AS failedTotal,
                    (SELECT COUNT(*)
-                    FROM builds b2
-                    WHERE b2.job_id = j.id
-                      AND b2.org_id = :orgId
-                      AND b2.status NOT IN ('IN_PROGRESS')
-                      AND b2.started_at >= :since
+                    FROM latest_daily_builds ldb2
+                    WHERE ldb2.job_id = j.id
+                      AND ldb2.status NOT IN ('IN_PROGRESS')
                       AND NOT EXISTS (
-                          SELECT 1 FROM test_results tr2 WHERE tr2.build_id = b2.id
+                          SELECT 1 FROM test_results tr2 WHERE tr2.build_id = ldb2.build_id
                       )) AS noResultBuilds
             FROM jobs j
-            LEFT JOIN builds b ON b.job_id = j.id AND b.org_id = :orgId AND b.started_at >= :since
-            LEFT JOIN test_results tr ON tr.build_id = b.id AND tr.org_id = :orgId
+            LEFT JOIN latest_daily_builds ldb ON ldb.job_id = j.id
+            LEFT JOIN test_results tr ON tr.build_id = ldb.build_id AND tr.org_id = :orgId
             WHERE j.org_id = :orgId
               AND j.is_test_job = TRUE
               AND EXISTS (
-                  SELECT 1 FROM builds b3
-                  WHERE b3.job_id = j.id AND b3.org_id = :orgId AND b3.started_at >= :since
+                  SELECT 1 FROM latest_daily_builds ldb3 WHERE ldb3.job_id = j.id
               )
             GROUP BY j.id, j.display_name, j.jenkins_job_name, j.last_build_status
             ORDER BY jobName
@@ -139,14 +161,20 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
     // ── report queries (date range) ───────────────────────────────────────────
 
     @Query(value = """
+            WITH latest_daily_builds AS (
+                SELECT DISTINCT ON (b.job_id, (b.started_at AT TIME ZONE 'UTC')::date)
+                       b.id AS build_id
+                FROM builds b
+                WHERE b.org_id = :orgId
+                  AND (:jobId IS NULL OR b.job_id = :jobId)
+                  AND b.started_at BETWEEN :fromDate AND :toDate
+                ORDER BY b.job_id, (b.started_at AT TIME ZONE 'UTC')::date, b.started_at DESC
+            )
             SELECT tr.test_suite AS moduleName,
                    COUNT(*)      AS total,
                    SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END) AS passed
-            FROM test_results tr
-            JOIN builds b ON tr.build_id = b.id
-            WHERE tr.org_id  = :orgId
-              AND (:jobId IS NULL OR tr.job_id = :jobId)
-              AND b.started_at BETWEEN :fromDate AND :toDate
+            FROM latest_daily_builds ldb
+            JOIN test_results tr ON tr.build_id = ldb.build_id AND tr.org_id = :orgId
             GROUP BY tr.test_suite
             ORDER BY SUM(CASE WHEN tr.status = 'PASSED' THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0) ASC
             """, nativeQuery = true)
@@ -182,6 +210,16 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
             @Param("toDate") Instant toDate);
 
     @Query(value = """
+            WITH latest_daily_builds AS (
+                SELECT DISTINCT ON (b.job_id, (b.started_at AT TIME ZONE 'UTC')::date)
+                       b.id AS build_id,
+                       b.job_id AS job_id
+                FROM builds b
+                WHERE b.org_id = :orgId
+                  AND (:jobId IS NULL OR b.job_id = :jobId)
+                  AND b.started_at BETWEEN :fromDate AND :toDate
+                ORDER BY b.job_id, (b.started_at AT TIME ZONE 'UTC')::date, b.started_at DESC
+            )
             SELECT COALESCE(j.display_name, j.jenkins_job_name) AS jobName,
                    COUNT(tr.id) AS totalTests,
                    j.last_build_status AS latestBuildStatus,
@@ -190,9 +228,8 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
                    SUM(CASE WHEN tr.status = 'FAILED' THEN 1 ELSE 0 END) AS failedTotal,
                    0 AS noResultBuilds
             FROM jobs j
-            LEFT JOIN builds b  ON b.job_id = j.id AND b.org_id = :orgId
-                                AND b.started_at BETWEEN :fromDate AND :toDate
-            LEFT JOIN test_results tr ON tr.build_id = b.id AND tr.org_id = :orgId
+            LEFT JOIN latest_daily_builds ldb ON ldb.job_id = j.id
+            LEFT JOIN test_results tr ON tr.build_id = ldb.build_id AND tr.org_id = :orgId
             WHERE j.org_id = :orgId AND j.is_test_job = TRUE
               AND (:jobId IS NULL OR j.id = :jobId)
             GROUP BY j.id, j.display_name, j.jenkins_job_name, j.last_build_status
