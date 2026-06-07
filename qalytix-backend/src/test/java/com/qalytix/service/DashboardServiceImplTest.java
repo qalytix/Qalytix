@@ -41,16 +41,17 @@ class DashboardServiceImplTest {
     @Test
     void getStats_returnsAggregatedCounts() {
         when(buildRepository.countByOrgIdAndStatus(ORG_ID, BuildStatus.IN_PROGRESS)).thenReturn(2L);
-        when(buildRepository.countByOrgIdAndStartedAtAfter(eq(ORG_ID), any(Instant.class))).thenReturn(15L);
-        when(buildRepository.countByOrgIdAndStatusAndStartedAtAfter(eq(ORG_ID), eq(BuildStatus.SUCCESS), any())).thenReturn(10L);
-        when(buildRepository.countByOrgIdAndStatusAndStartedAtAfter(eq(ORG_ID), eq(BuildStatus.FAILURE), any())).thenReturn(3L);
+        when(buildRepository.findLatestBuildStatusPerJobSince(eq(ORG_ID), any(Instant.class), eq(false)))
+                .thenReturn(List.of("SUCCESS", "SUCCESS", "FAILURE", "SUCCESS", "SUCCESS",
+                        "SUCCESS", "SUCCESS", "SUCCESS", "SUCCESS", "FAILURE",
+                        "FAILURE", "SUCCESS", "SUCCESS", "SUCCESS", "SUCCESS"));
         when(buildRepository.findRecentByOrgId(eq(ORG_ID), any(Pageable.class))).thenReturn(List.of());
 
         DashboardStatsResponse stats = service.getStats(false);
 
         assertThat(stats.activeBuilds()).isEqualTo(2L);
         assertThat(stats.todayTotal()).isEqualTo(15L);
-        assertThat(stats.todaySuccess()).isEqualTo(10L);
+        assertThat(stats.todaySuccess()).isEqualTo(12L);
         assertThat(stats.todayFailure()).isEqualTo(3L);
         assertThat(stats.recentBuilds()).isEmpty();
     }
@@ -63,8 +64,7 @@ class DashboardServiceImplTest {
         Job job = Job.builder().id(5L).jenkinsJobName("my-job").displayName("My Job").build();
 
         when(buildRepository.countByOrgIdAndStatus(any(), any())).thenReturn(0L);
-        when(buildRepository.countByOrgIdAndStartedAtAfter(any(), any())).thenReturn(0L);
-        when(buildRepository.countByOrgIdAndStatusAndStartedAtAfter(any(), any(), any())).thenReturn(0L);
+        when(buildRepository.findLatestBuildStatusPerJobSince(any(), any(), anyBoolean())).thenReturn(List.of());
         when(buildRepository.findRecentByOrgId(eq(ORG_ID), any(Pageable.class))).thenReturn(List.of(build));
         when(jobRepository.findById(5L)).thenReturn(Optional.of(job));
 
@@ -84,8 +84,7 @@ class DashboardServiceImplTest {
         Job job = Job.builder().id(5L).jenkinsJobName("raw-job").displayName(null).build();
 
         when(buildRepository.countByOrgIdAndStatus(any(), any())).thenReturn(0L);
-        when(buildRepository.countByOrgIdAndStartedAtAfter(any(), any())).thenReturn(0L);
-        when(buildRepository.countByOrgIdAndStatusAndStartedAtAfter(any(), any(), any())).thenReturn(0L);
+        when(buildRepository.findLatestBuildStatusPerJobSince(any(), any(), anyBoolean())).thenReturn(List.of());
         when(buildRepository.findRecentByOrgId(eq(ORG_ID), any(Pageable.class))).thenReturn(List.of(build));
         when(jobRepository.findById(5L)).thenReturn(Optional.of(job));
 
