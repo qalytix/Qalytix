@@ -2,6 +2,8 @@
 
 Monitor your CI/CD test quality, detect flaky tests, track failure trends, and alert your team — all in one place.
 
+![Qalytix demo](https://raw.githubusercontent.com/qalytix/Qalytix/master/assets/demo.gif)
+
 ## Quick Start
 
 **1. Create a `.env` file:**

@@ -8,6 +8,10 @@
 Monitor • Analyze • Predict
 </p>
 
+<p align="center">
+  <img src="assets/demo.gif" alt="Qalytix demo" width="100%" />
+</p>
+
 ---
 
 ## Overview
