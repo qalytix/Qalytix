@@ -39,6 +39,7 @@ public class AdminServiceImpl implements AdminService {
 
         long totalOrgs         = orgRepository.count();
         long activeSubscriptions = subscriptionRepository.findAll().stream()
+                .filter(s -> s.getPlan() != Plan.FREE)
                 .filter(s -> s.getStatus() == SubscriptionStatus.ACTIVE || s.getStatus() == SubscriptionStatus.TRIALING)
                 .count();
         long totalUsers        = userRepository.count();
